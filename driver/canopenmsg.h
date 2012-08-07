@@ -184,8 +184,10 @@ namespace canopen {
   void ipMode(uint16_t deviceID);
   void sendSync();
   void modesOfOperationDisplay(uint16_t deviceID);
-  Message* statusWord(uint16_t deviceID); // , uint16_t waitForValue=0);
+  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param="", bool writeMode=true);
+  Message* statusWord(uint16_t deviceID);
   Message* controlWord(uint16_t deviceID, std::string mode);
+
 }
 
 // todo: message caching; data changing of existing messages (for max. efficiency)

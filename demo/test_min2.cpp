@@ -4,32 +4,20 @@
 
 int main() {
   if (!canopen::openConnection("/dev/pcan32")) {
-    std::cout << "Cannot open CAN device" << std::endl;
+    std::cout << "Cannot open CAN device; aborting." << std::endl;
     return -1;
   }
   
-  canopen::Message* SDOreply; // SDO replies will be stored here
   canopen::initListener();    // initialize listener thread
-
-  /*canopen::controlWord(12, "sm_shutdown");
-  SDOreply = canopen::statusWord(12);
-  SDOreply->debugPrint();
-
-  canopen::controlWord(12, "sm_switch_on");
-  SDOreply = canopen::statusWord(12);
-  SDOreply->debugPrint();
   
-  canopen::controlWord(12, "sm_enable_operation");
-  SDOreply = canopen::statusWord(12);
-  SDOreply->debugPrint();
-
-  // bool state = SDOreply->checkForConstant("operation_enable");
-  bool state = SDOreply->checkForConstant("sm_switch_on");
-  std::cout << state << std::endl; */
-
-  bool initOk = canopen::initDevice(12);
-  std::cout << "hi: " << initOk << std::endl;
-
+  if (!canopen::initDevice(12)) {
+    std::cout << "Device could not be initialized; aborting." << std::endl;
+    return -1;
+  }
+  
+  // todo: homing
+  // canopen::modesOfOperation("homing_mode");
+  // canopen::controlWord("start_homing|enable_ip_mode");
   /*
   SDOreply = canopen::statusWord(12);
 

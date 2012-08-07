@@ -300,6 +300,7 @@ namespace canopen {
     Message(deviceID, "modes_of_operation",
 	    eds.getConst("modes_of_operation", "interpolated_position_mode")).writeCAN();
   }
+  
   Message* controlWord(uint16_t deviceID, std::string mode) {
     Message m(deviceID, "controlword", eds.getConst("controlword", mode));
     m.writeCAN();
@@ -307,6 +308,28 @@ namespace canopen {
     std::cout << "controlword answer:" << std::endl;
     statusMsg->debugPrint();
     return statusMsg;
+  }
+
+  /* Message* modesOfOperation(uint16_t deviceID, std::string mode) {
+    Message m(deviceID, "modes_of_operation", eds.getConst("modes_of_operation", mode));
+    m.writeCAN();
+    Message* reply = m.waitForSDOAnswer();
+    std::cout << "modes_of_operation answer:" << std::endl;
+    reply->debugPrint();
+    return reply;
+    }*/
+  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param, bool writeMode) {
+    Message* m;
+    if (param != "") 
+      m = new Message(deviceID, alias, eds.getConst(alias, param));
+    else {
+      m = new Message(deviceID, alias);
+      std::cout << "HERE!!!!! " << alias << "    " << static_cast<int>(writeMode) << std::endl;
+    }
+    m->writeCAN(writeMode);
+    Message* reply = m->waitForSDOAnswer();
+    delete m;
+    return reply;
   }
 
   void sendSync() { Message(0, "Sync").writeCAN(); }
@@ -332,58 +355,25 @@ namespace canopen {
     Message(0, "NMT", eds.getConst("NMT", "start_remote_node")).writeCAN();
     std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
 
-    controlWord(12, "sm_shutdown");
-    SDOreply = statusWord(12);
-    SDOreply->debugPrint();
+    sendSDO(12, "controlword", "sm_shutdown");
+    // controlWord(12, "sm_shutdown");
+    // SDOreply = statusWord(12);
+    // SDOreply->debugPrint();
 
-    controlWord(12, "sm_switch_on");
+    sendSDO(12, "controlword", "sm_switch_on");
+    // controlWord(12, "sm_shutdown");
+    // SDOreply = statusWord(12);
+    sendSDO(12, "controlword", "sm_enable_operation");
+    SDOreply = sendSDO(12, "statusword", "", false);
+    // SDOreply = statusWord(12);
+    /* controlWord(12, "sm_switch_on");
     SDOreply = statusWord(12);
     SDOreply->debugPrint();
 
     controlWord(12, "sm_enable_operation");
     SDOreply = statusWord(12);
-    SDOreply->debugPrint();
-
-    return SDOreply->checkForConstant("operation_enable");
-
-    /* Message m(deviceID, "controlword", eds.getConst("controlword", "reset_fault"));
-    m.writeCAN();
-    m.waitForSDOAnswer(); 
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));  */
-
-    // Message(0, "NMT", eds.getConst("NMT", "reset_application")).writeCAN();
-    //  std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
-
-    /* Message(0, "NMT", eds.getConst("NMT", "stop_remote_node")).writeCAN();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
-    
-    Message(0, "NMT", eds.getConst("NMT", "start_remote_node")).writeCAN();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
-
-    Message* statusMsg;
-    
-    Message m(deviceID, "controlword", eds.getConst("controlword", "sm_shutdown"));
-    m.writeCAN();
-    statusMsg = m.waitForSDOAnswer();
-    std::cout << "shutdown answer:" << std::endl;
-    statusMsg->debugPrint();
-
-    m = Message(deviceID, "controlword", eds.getConst("controlword", "sm_switch_on"));
-    m.writeCAN();
-    statusMsg = m.waitForSDOAnswer();
-    std::cout << std::endl << "switch_on answer:" << std::endl;
-    statusMsg->debugPrint();
-
-    return 0;  // todo
-
-    m = Message(deviceID, "controlword", eds.getConst("controlword", "sm_enable_operation"));
-    m.writeCAN();
-    m.waitForSDOAnswer();
-
-    statusMsg = canopen::statusWord(deviceID);
-    std::cout << "initDevice statusWord:" << std::endl;
-    statusMsg->debugPrint();
-    return statusMsg->checkForConstant("switch_on_disabled");  // operation_enable */
+    SDOreply->debugPrint();*/
+    return SDOreply->checkForConstant("operation_enable"); // check if device is indeed operational
   }
 
   void homing(uint16_t deviceID, uint32_t sleep_ms) {
