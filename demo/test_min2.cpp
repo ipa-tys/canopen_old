@@ -1,6 +1,6 @@
 #include <thread>
 #include <chrono>
-#include <canopenmsg.h>
+#include <canopen_highlevel.h>
 
 int main() {
   if (!canopen::openConnection("/dev/pcan32")) {
@@ -10,7 +10,7 @@ int main() {
   
   canopen::initListener();    // initialize listener thread
   
-  if (!canopen::initDevice(12)) {
+  if (!canopen::initDevice(12)) { // put NMT and 402 state machines to operational
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
   }

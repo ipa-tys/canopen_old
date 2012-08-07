@@ -6,12 +6,16 @@ canopen_internal.o: canopen_internal.h canopen_internal.cpp
 canopenmsg.o: canopenmsg.h canopenmsg.cpp
 	g++ -c -fPIC  canopenmsg.cpp -o canopenmsg.o -std=c++0x 
 
-libcanopen.a: canopen_internal.o canopenmsg.o
+canopen_highlevel.o: canopen_highlevel.h canopen_highlevel.cpp
+	g++ -c -fPIC  canopen_highlevel.cpp -o canopen_highlevel.o -std=c++0x 
+
+libcanopen.a: canopen_internal.o canopenmsg.o canopen_highlevel.o
 	ar rv libcanopen.a canopen_internal.o
 	ar rv libcanopen.a canopenmsg.o
+	ar rv libcanopen.a canopen_highlevel.o
 
 clean:
-	\rm *.o *.so *~ 
+	\rm *.o *.a *.so *~ 
 
 uninstall:
 	rm /usr/lib/libcanopen.a
@@ -20,6 +24,7 @@ uninstall:
 
 install:
 	cp libcanopen.a /usr/lib
+	cp canopen_highlevel.h /usr/include
 	cp canopenmsg.h /usr/include
 	cp canopen_internal.h /usr/include
 
