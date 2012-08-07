@@ -1,21 +1,25 @@
-SUBDIRS = driver demo
+# not used right now. Instead:
+# in driver: make, sudo make install
+# then in demo: make
 
-.PHONY: all
-all:
-	for dir in $(SUBDIRS); do \
-		$(MAKE) -C $$dir; \
-	done
+#SUBDIRS = driver demo
 
-clean: 
-	rm -f *~
-	for dir in $(SUBDIRS); do \
-	  $(MAKE) --directory=$$dir clean; \
-	done
+#.PHONY: all
+#all:
+#	for dir in $(SUBDIRS); do \
+#		$(MAKE) -C $$dir; \
+#	done
 
-uninstall:
-	$(MAKE) uninstall --directory=driver
+#clean: 
+#	rm -f *~
+#	for dir in $(SUBDIRS); do \
+#	  $(MAKE) --directory=$$dir clean; \
+#	done
 
-install:
-	$(MAKE) install --directory=driver
+#uninstall:
+#	$(MAKE) uninstall --directory=driver
+
+#install:
+#	$(MAKE) install --directory=driver
 
 # $(MAKE) --directory=$$dir clean; \
