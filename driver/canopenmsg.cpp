@@ -332,6 +332,11 @@ namespace canopen {
     return reply;
   }
 
+  void sendNMT(std::string param) {
+    Message(0, "NMT", eds.getConst("NMT", param)).writeCAN();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
+  }
+
   void sendSync() { Message(0, "Sync").writeCAN(); }
   void sendPos(std::string alias, uint32_t pos) {
     std::vector<uint32_t> v;
@@ -347,33 +352,13 @@ namespace canopen {
   }
 
   bool initDevice(uint16_t deviceID) {
-    canopen::Message* SDOreply;
-  
-    Message(0, "NMT", eds.getConst("NMT", "stop_remote_node")).writeCAN();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
-
-    Message(0, "NMT", eds.getConst("NMT", "start_remote_node")).writeCAN();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
-
+    sendNMT("stop_remote_node");
+    sendNMT("start_remote_node");
     sendSDO(12, "controlword", "sm_shutdown");
-    // controlWord(12, "sm_shutdown");
-    // SDOreply = statusWord(12);
-    // SDOreply->debugPrint();
-
     sendSDO(12, "controlword", "sm_switch_on");
-    // controlWord(12, "sm_shutdown");
-    // SDOreply = statusWord(12);
     sendSDO(12, "controlword", "sm_enable_operation");
-    SDOreply = sendSDO(12, "statusword", "", false);
-    // SDOreply = statusWord(12);
-    /* controlWord(12, "sm_switch_on");
-    SDOreply = statusWord(12);
-    SDOreply->debugPrint();
-
-    controlWord(12, "sm_enable_operation");
-    SDOreply = statusWord(12);
-    SDOreply->debugPrint();*/
-    return SDOreply->checkForConstant("operation_enable"); // check if device is indeed operational
+    Message* SDOreply = sendSDO(12, "statusword", "", false);
+    return SDOreply->checkForConstant("operation_enable"); // return "true" if device is indeed operational
   }
 
   void homing(uint16_t deviceID, uint32_t sleep_ms) {

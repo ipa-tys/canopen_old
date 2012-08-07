@@ -185,6 +185,7 @@ namespace canopen {
   void sendSync();
   void modesOfOperationDisplay(uint16_t deviceID);
   Message* sendSDO(uint16_t deviceID, std::string alias, std::string param="", bool writeMode=true);
+  void sendNMT(std::string param);
   Message* statusWord(uint16_t deviceID);
   Message* controlWord(uint16_t deviceID, std::string mode);
 
