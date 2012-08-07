@@ -1,13 +1,13 @@
-all: test_min test_min2
+all: test_min2
 
 test_min: test_min.o
-	g++ test_min.o -o test_min -lpthread -lcanopenmsg
+	g++ test_min.o -o test_min -lpthread -lcanopen
 
 test_min.o: test_min.cpp
 	g++ -c test_min.cpp -std=c++0x
 
 test_min2: test_min2.o
-	g++ test_min2.o -o test_min2 -lpthread -lcanopenmsg
+	g++ test_min2.o -o test_min2 -lpthread -lcanopen -lpcan
 
 test_min2.o: test_min2.cpp
 	g++ -c test_min2.cpp -std=c++0x

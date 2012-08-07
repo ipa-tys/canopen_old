@@ -12,6 +12,9 @@ clean:
 	  $(MAKE) --directory=$$dir clean; \
 	done
 
+uninstall:
+	$(MAKE) uninstall --directory=driver
+
 install:
 	$(MAKE) install --directory=driver
 

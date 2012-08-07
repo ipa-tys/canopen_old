@@ -1,20 +1,17 @@
-#include "canopenmsg.h"
 #include <iostream>
 #include <string>
 #include <libpcan.h>
 #include <set>
 #include <map>
+#include "canopenmsg.h"
 
 namespace canopen {
 
   HANDLE h;
   EDSDict eds;
   PDODict pdo;
-  std::set<std::string> pendingReplies;
-  // std::multiset<std::string> pendingSDOReplies;  todo: not needed anymore (?)
-  // todo: make this map threadsafe
-  
-  // std::map<std::string, TPCANMsg* > pendingSDOReplies;  // todo: change to Message*
+  std::set<std::string> pendingReplies; // todo: remove
+  // todo: make this map threadsafe:
   std::map<std::string, Message* > pendingSDOReplies;
 
   // std::thread listener_thread;
@@ -548,25 +545,5 @@ namespace canopen {
     return it->alias_;
   }
 
-  // Constants
-  uint64_t Constants::getMask(std::string name) {
-    typedef ConstantContainer::nth_index<1>::type ConstantContainer_by_name;
-    ConstantContainer_by_name::iterator it=constants_.get<1>().find(name);
-    return it->mask_;
-  }
-
-  uint64_t Constants::getValue(std::string name) {
-    typedef ConstantContainer::nth_index<1>::type ConstantContainer_by_name;
-    ConstantContainer_by_name::iterator it=constants_.get<1>().find(name);
-    return it->value_;
-  }
-
-  std::string Constants::getName(uint64_t mask, uint64_t value) {
-    return "test";
-  }
-
-  void Constants::insert(std::string name, uint64_t mask, uint64_t value) {
-    constants_.insert(Constant(name, mask, value));
-  }
   
 }
