@@ -270,7 +270,7 @@ namespace canopen {
   bool openConnection(std::string devName) {
     h = LINUX_CAN_Open(devName.c_str(), O_RDWR);
     if (!h) {
-      std::cout << "Cannot open CAN device" << std::endl;
+      // std::cout << "Cannot open CAN device" << std::endl;
       return false;
     }
     errno = CAN_Init(h, CAN_BAUD_500K, CAN_INIT_TYPE_ST);
@@ -300,6 +300,15 @@ namespace canopen {
     Message(deviceID, "modes_of_operation",
 	    eds.getConst("modes_of_operation", "interpolated_position_mode")).writeCAN();
   }
+  Message* controlWord(uint16_t deviceID, std::string mode) {
+    Message m(deviceID, "controlword", eds.getConst("controlword", mode));
+    m.writeCAN();
+    Message* statusMsg = m.waitForSDOAnswer();
+    std::cout << "controlword answer:" << std::endl;
+    statusMsg->debugPrint();
+    return statusMsg;
+  }
+
   void sendSync() { Message(0, "Sync").writeCAN(); }
   void sendPos(std::string alias, uint32_t pos) {
     std::vector<uint32_t> v;
@@ -315,40 +324,68 @@ namespace canopen {
   }
 
   bool initDevice(uint16_t deviceID) {
-    Message m(deviceID, "controlword", eds.getConst("controlword", "reset_fault"));
-    m.writeCAN();
-    m.waitForSDOAnswer();
+    canopen::Message* SDOreply;
+  
+    Message(0, "NMT", eds.getConst("NMT", "stop_remote_node")).writeCAN();
     std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
+
+    Message(0, "NMT", eds.getConst("NMT", "start_remote_node")).writeCAN();
+    std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
+
+    controlWord(12, "sm_shutdown");
+    SDOreply = statusWord(12);
+    SDOreply->debugPrint();
+
+    controlWord(12, "sm_switch_on");
+    SDOreply = statusWord(12);
+    SDOreply->debugPrint();
+
+    controlWord(12, "sm_enable_operation");
+    SDOreply = statusWord(12);
+    SDOreply->debugPrint();
+
+    return SDOreply->checkForConstant("operation_enable");
+
+    /* Message m(deviceID, "controlword", eds.getConst("controlword", "reset_fault"));
+    m.writeCAN();
+    m.waitForSDOAnswer(); 
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));  */
 
     // Message(0, "NMT", eds.getConst("NMT", "reset_application")).writeCAN();
     //  std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
 
-    Message(0, "NMT", eds.getConst("NMT", "stop_remote_node")).writeCAN();
+    /* Message(0, "NMT", eds.getConst("NMT", "stop_remote_node")).writeCAN();
     std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
     
     Message(0, "NMT", eds.getConst("NMT", "start_remote_node")).writeCAN();
     std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
 
-    m = Message(deviceID, "controlword", eds.getConst("controlword", "sm_shutdown"));
+    Message* statusMsg;
+    
+    Message m(deviceID, "controlword", eds.getConst("controlword", "sm_shutdown"));
     m.writeCAN();
-    m.waitForSDOAnswer();
+    statusMsg = m.waitForSDOAnswer();
+    std::cout << "shutdown answer:" << std::endl;
+    statusMsg->debugPrint();
 
     m = Message(deviceID, "controlword", eds.getConst("controlword", "sm_switch_on"));
     m.writeCAN();
-    m.waitForSDOAnswer();
+    statusMsg = m.waitForSDOAnswer();
+    std::cout << std::endl << "switch_on answer:" << std::endl;
+    statusMsg->debugPrint();
+
+    return 0;  // todo
 
     m = Message(deviceID, "controlword", eds.getConst("controlword", "sm_enable_operation"));
     m.writeCAN();
     m.waitForSDOAnswer();
 
-    Message* statusMsg = canopen::statusWord(deviceID);
-
-    if (statusMsg->checkForConstant("operation_enable")) {  // operation_enable
-      return true;
-    } else {
-      return false;
-    }
+    statusMsg = canopen::statusWord(deviceID);
+    std::cout << "initDevice statusWord:" << std::endl;
+    statusMsg->debugPrint();
+    return statusMsg->checkForConstant("switch_on_disabled");  // operation_enable */
   }
+
   void homing(uint16_t deviceID, uint32_t sleep_ms) {
     Message(deviceID, "modes_of_operation", eds.getConst("modes_of_operation", "homing_mode")).writeCAN();
     Message(deviceID, "controlword", eds.getConst("controlword", "start_homing|enable_ip_mode")).writeCAN();

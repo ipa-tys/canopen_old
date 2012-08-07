@@ -176,6 +176,7 @@ namespace canopen {
   void homing(uint16_t deviceID, uint32_t sleep_ms=0);
   
   // wrapper for single CANopen commands
+  
   void stopRemoteNode();
   void sendPos(std::string alias, uint32_t pos);
   bool openConnection(std::string devName);
@@ -184,6 +185,7 @@ namespace canopen {
   void sendSync();
   void modesOfOperationDisplay(uint16_t deviceID);
   Message* statusWord(uint16_t deviceID); // , uint16_t waitForValue=0);
+  Message* controlWord(uint16_t deviceID, std::string mode);
 }
 
 // todo: message caching; data changing of existing messages (for max. efficiency)
