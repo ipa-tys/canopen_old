@@ -13,5 +13,5 @@ test_min2.o: test_min2.cpp
 	g++ -c test_min2.cpp -std=c++0x
 
 clean:
-	\rm *.o *~ test_min test_min2
+	\rm -f *.o *~ test_min test_min2
 

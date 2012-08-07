@@ -7,10 +7,12 @@ all:
 	done
 
 clean: 
-	rm *~
+	rm -f *~
 	for dir in $(SUBDIRS); do \
-		$(MAKE) --directory=$$dir clean; \
+	  $(MAKE) --directory=$$dir clean; \
 	done
 
 install:
 	$(MAKE) install --directory=driver
+
+# $(MAKE) --directory=$$dir clean; \
