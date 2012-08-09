@@ -26,9 +26,15 @@ namespace canopen {
   }
   
   bool initDevice(uint16_t deviceID) {
+    // sendNMT("stop_remote_node");   // todo: change this!, check NMT state
+    // sendNMT("start_remote_node");
+
+
     // todo: for multiple devices have to separate NMT and 402 state machine
+    std::cout << "hi1" << std::endl;  // used this for PRH, disabled for powerball
     sendSDO(deviceID, "controlword", "fault_reset");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::cout << "hi2" << std::endl; 
 
     // if (sendSDO(deviceID, "statusword", "", false)->checkForConstant("switch_on_disabled"))
     sendNMT("stop_remote_node");   // todo: change this!, check NMT state
@@ -117,7 +123,8 @@ namespace canopen {
     v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
     v.push_back(0);
     v.push_back(pos);
-    Message("schunk_default_rPDO_12", v).writeCAN();
+    // Message("schunk_default_rPDO_12", v).writeCAN();  // works for PRH module
+    Message("schunk_default_rPDO_8", v).writeCAN();
   }
 
 }

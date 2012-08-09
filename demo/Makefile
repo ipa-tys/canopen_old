@@ -1,10 +1,16 @@
-all: single_device
+all: single_device powerball
 
 single_device: single_device.o
 	g++ single_device.o -o single_device -lpthread -lcanopen -lpcan
 
 single_device.o: single_device.cpp
 	g++ -c single_device.cpp -std=c++0x
+
+powerball: powerball.o
+	g++ powerball.o -o powerball -lpthread -lcanopen -lpcan
+
+powerball.o: powerball.cpp
+	g++ -c powerball.cpp -std=c++0x
 
 test_min: test_min.o
 	g++ test_min.o -o test_min -lpthread -lcanopen
