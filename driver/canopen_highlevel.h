@@ -39,8 +39,8 @@ namespace canopen {
   bool enableBreak(uint16_t deviceID);
 
   // void ipMode(uint16_t deviceID); // put device into IP mode, ready to receive PDOs
-  void sendPos(uint32_t pos); // send position command as PDO (for IP mode)
-  void sendPos7(uint32_t pos); // send position command as PDO (for IP mode)
-  void sendPos8(uint32_t pos); // send position command as PDO (for IP mode)
+  void sendPos(uint16_t deviceID, uint32_t pos); // send position command as PDO (for IP mode)
+  // void sendPos7(uint32_t pos); // send position command as PDO (for IP mode)
+  // void sendPos8(uint32_t pos); // send position command as PDO (for IP mode)
 }
 #endif

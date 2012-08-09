@@ -103,10 +103,11 @@ namespace canopen {
 
   bool enableBreak(uint16_t deviceID) {
     sendSDO(deviceID, "controlword", "sm_switch_on");
-    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
+    /* while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
       std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+      }*/
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     return true; // todo timeout
   }
 
@@ -118,35 +119,12 @@ namespace canopen {
     return ok; // todo
   }
 
-  void sendPos(uint32_t pos) {  // todo: more flexible approach with device ID
+  void sendPos(uint16_t deviceID, uint32_t pos) {  // todo: more flexible approach with device ID
     std::vector<uint32_t> v;
     v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
     v.push_back(0);
     v.push_back(pos);
     // Message("schunk_default_rPDO_12", v).writeCAN();  // works for PRH module
-    Message("schunk_default_rPDO_8", v).writeCAN();
+    Message(deviceID, "schunk_default_rPDO", v).writeCAN();
   }
-
-  void sendPos8(uint32_t pos) {  // todo: more flexible approach with device ID
-    std::vector<uint32_t> v;
-    v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
-    v.push_back(0);
-    v.push_back(pos);
-    // Message("schunk_default_rPDO_12", v).writeCAN();  // works for PRH module
-    Message("schunk_default_rPDO_8", v).writeCAN();
-  }
-
-    void sendPos7(uint32_t pos) {  // todo: more flexible approach with device ID
-    std::vector<uint32_t> v;
-    v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
-    v.push_back(0);
-    v.push_back(pos);
-    // Message("schunk_default_rPDO_12", v).writeCAN();  // works for PRH module
-    Message("schunk_default_rPDO_7", v).writeCAN();
-  }
-
-
-
-
-
 }

@@ -128,7 +128,8 @@ namespace canopen {
     return (value & mask) == constValue;
   }
 
-  Message::Message(std::string alias, std::vector<uint32_t> values):alias_(alias), values_(values) {}
+  Message::Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values):
+    nodeID_(nodeID), alias_(alias), values_(values) {}
 
   void Message::writeCAN(bool writeMode) {
     TPCANMsg msg;
@@ -145,7 +146,7 @@ namespace canopen {
 	  pos++;
 	}
       }
-      msg.ID = pdo.getCobID(alias_);
+      msg.ID = pdo.getCobID(alias_) + nodeID_;
       msg.MSGTYPE = 0x00;
       msg.LEN = 8;
       CAN_Write(h, &msg);
@@ -369,21 +370,22 @@ namespace canopen {
     // rPDOs: 0x200+nodeID, 0x300+nodeID
     // tPDOs: 0x180 0x280 0x380 0x480
 
-    // Schunk default rPDO for device ID 12:
+    // Schunk default rPDO 
     std::vector<std::string> comp1;
     comp1.push_back("controlword");
     comp1.push_back("notused16"); // not sure what these two bytes are used for
     comp1.push_back("interpolation_data_record:ip_data_position");
-    d_.insert(PDOClass("schunk_default_rPDO_12", 0x0c, 0x200 + 0x0c, comp1));
+    d_.insert(PDOClass("schunk_default_rPDO", 0x200, comp1));
 
-    // Schunk default tPDO for device ID 12:
+    // Schunk default tPDO 
     std::vector<std::string> comp2;
     comp2.push_back("statusword");
     comp2.push_back("torque_actual_value");
     comp2.push_back("position_actual_value");
-    d_.insert(PDOClass("schunk_default_tPDO_12", 0x0c, 0x180 + 0x0c, comp2));
+    d_.insert(PDOClass("schunk_default_tPDO", 0x180, comp2));
 
     // Schunk  tPDO for device ID 12:
+    /*
     std::vector<std::string> comp3;
     comp3.push_back("notused64");
     d_.insert(PDOClass("schunk_4th_tPDO_12", 0x0c, 0x480 + 0x0c, comp3));
@@ -411,10 +413,7 @@ namespace canopen {
     comp7.push_back("torque_actual_value");
     comp7.push_back("position_actual_value");
     d_.insert(PDOClass("schunk_default_tPDO_7", 0x07, 0x180 + 0x07, comp7));
-
-
-
-
+    */
   }
 
   std::vector<std::string> PDODict::getComponents(std::string alias) {
@@ -435,12 +434,12 @@ namespace canopen {
     return it->alias_;
   }
 
-  uint8_t PDODict::getNodeID(std::string alias) {
+  /*  uint8_t PDODict::getNodeID(std::string alias) {
     typedef PDOClassSet::nth_index<0>::type PDOClassSet_by_alias;
     PDOClassSet_by_alias::iterator it=d_.get<0>().find(alias);
     return it->nodeID_;
 
-  }
+    }*/
 
   bool PDODict::cobIDexists(uint16_t cobID) {
     typedef PDOClassSet::nth_index<1>::type PDOClassSet_by_cobID;

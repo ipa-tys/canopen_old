@@ -50,7 +50,7 @@ namespace canopen {
   public:
     Message(TPCANRdMsg m); // construct message from raw CAN message (for messages coming in from bus)
     Message(uint8_t nodeID, std::string alias, uint32_t value=0); // user-constructed non-PDO message
-    Message(std::string alias, std::vector<uint32_t> values); // user-constructed PDO message
+    Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values); // user-constructed PDO message
     void writeCAN(bool writeMode=true);
     static Message* readCAN(bool blocking=true);
     // std::vector<std::string> parse(); // todo: not needed? / translate message from device into human-readable 
@@ -60,7 +60,7 @@ namespace canopen {
     bool checkForConstant(std::string constName); // only for SDOs so far
     std::vector<std::string> parseFlags();
   private:
-    uint8_t nodeID_; // PDOs already have this in their PDOClass entry, but duplicated here for convenience
+    uint8_t nodeID_; 
     std::string alias_; // entry into EDSDict, or PDODict, depending on message
     std::vector<uint32_t> values_;
 

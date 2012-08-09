@@ -17,7 +17,7 @@
 namespace canopen {
   extern HANDLE h;
   
-   namespace bmi = boost::multi_index;
+  namespace bmi = boost::multi_index;
   typedef boost::bimap<std::string, uint32_t> bmtype;
 
   struct Constant {
@@ -30,7 +30,7 @@ namespace canopen {
   };
   
   struct mask_value_key:bmi::composite_key<
-  Constant,
+    Constant,
     BOOST_MULTI_INDEX_MEMBER(Constant, uint64_t, mask_),
     BOOST_MULTI_INDEX_MEMBER(Constant, uint64_t, value_)
     >{};
@@ -98,14 +98,13 @@ namespace canopen {
     > EDSClassSet;
 
 
-    struct PDOClass {  // todo:
+  struct PDOClass {  // todo:
     std::string alias_;
-    uint8_t nodeID_;
     uint16_t cobID_;
     std::vector<std::string> components_; // entries into EDSDict
 
-  PDOClass(std::string alias, uint8_t nodeID, uint16_t cobID, std::vector<std::string> components):
-    alias_(alias), nodeID_(nodeID), cobID_(cobID), components_(components) {}
+  PDOClass(std::string alias, uint16_t cobID, std::vector<std::string> components):
+    alias_(alias), cobID_(cobID), components_(components) {}
   };
   typedef bmi::multi_index_container<PDOClass,
     bmi::indexed_by<
