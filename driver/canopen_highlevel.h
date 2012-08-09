@@ -13,6 +13,8 @@ namespace canopen {
   void closeConnection();
   void initListenerThread(); // initialize listener thread
   // bool initAll(); // todo??
+  void faultReset(uint16_t deviceID);
+  void initNMT();
   bool initDevice(uint16_t deviceID); // init NMT and 402 state machines
   bool shutdownDevice(uint16_t deviceID); // init NMT and 402 state machines
   void sendSync(uint32_t sleepTime_msec); // sends a SYNC (must be done in regular time intervals)
@@ -38,5 +40,7 @@ namespace canopen {
 
   // void ipMode(uint16_t deviceID); // put device into IP mode, ready to receive PDOs
   void sendPos(uint32_t pos); // send position command as PDO (for IP mode)
+  void sendPos7(uint32_t pos); // send position command as PDO (for IP mode)
+  void sendPos8(uint32_t pos); // send position command as PDO (for IP mode)
 }
 #endif

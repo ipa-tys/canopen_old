@@ -388,19 +388,30 @@ namespace canopen {
     comp3.push_back("notused64");
     d_.insert(PDOClass("schunk_4th_tPDO_12", 0x0c, 0x480 + 0x0c, comp3));
 
-
     std::vector<std::string> comp4;
     comp4.push_back("controlword");
     comp4.push_back("notused16"); // not sure what these two bytes are used for
     comp4.push_back("interpolation_data_record:ip_data_position");
     d_.insert(PDOClass("schunk_default_rPDO_8", 0x08, 0x200 + 0x08, comp4));
-
     
     std::vector<std::string> comp5;
     comp5.push_back("statusword");
     comp5.push_back("torque_actual_value");
     comp5.push_back("position_actual_value");
     d_.insert(PDOClass("schunk_default_tPDO_8", 0x08, 0x180 + 0x08, comp5));
+
+    std::vector<std::string> comp6;
+    comp6.push_back("controlword");
+    comp6.push_back("notused16"); // not sure what these two bytes are used for
+    comp6.push_back("interpolation_data_record:ip_data_position");
+    d_.insert(PDOClass("schunk_default_rPDO_7", 0x07, 0x200 + 0x07, comp6));
+    
+    std::vector<std::string> comp7;
+    comp7.push_back("statusword");
+    comp7.push_back("torque_actual_value");
+    comp7.push_back("position_actual_value");
+    d_.insert(PDOClass("schunk_default_tPDO_7", 0x07, 0x180 + 0x07, comp7));
+
 
 
 
