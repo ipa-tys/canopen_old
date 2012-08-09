@@ -49,13 +49,13 @@ int main(int argc, char *argv[]) {
   canopen::sendSync(10);
   canopen::sendSync(10);
   int pos = 0;
-  for (int j=0; j<10; j++) {
-    for (int i=0; i<1000; i++) {
+  for (int j=0; j<3; j++) {
+    for (int i=0; i<500; i++) {
       canopen::sendPos(deviceID, pos);
       pos += 100;
       canopen::sendSync(10);
     }
-    for (int i=1000; i>0; i--) {
+    for (int i=500; i>0; i--) {
       canopen::sendPos(deviceID, pos);
       pos -= 100;
       canopen::sendSync(10);
