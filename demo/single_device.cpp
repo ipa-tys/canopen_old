@@ -10,7 +10,7 @@
 int main(int argc, char *argv[]) {
   if (argc != 2) {
     std::cout << "Please call the program with the CAN deviceID,"
-	      << "e.g. 'test_script 12'" << std::endl;
+	      << "e.g. './single_device 12'" << std::endl;
     return -1;
   }
   uint16_t deviceID = std::stoi(std::string(argv[1]));
@@ -25,6 +25,8 @@ int main(int argc, char *argv[]) {
   canopen::initListenerThread();    
     
   // put NMT and 402 state machines for device  to operational:
+  canopen::faultReset(deviceID);
+  canopen::initNMT();
   if (!canopen::initDevice(deviceID)) { 
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
@@ -44,18 +46,21 @@ int main(int argc, char *argv[]) {
   }
 
   // move a bit in IP mode:
-  /*  canopen::sendSync(10);  // todo
-  uint32_t pos = 0;
-  for (int i=0; i<1000; i++) {
-    canopen::sendPos(pos);
-    pos += 100;
-    canopen::sendSync(10);
+  canopen::sendSync(10);
+  canopen::sendSync(10);
+  int pos = 0;
+  for (int j=0; j<10; j++) {
+    for (int i=0; i<1000; i++) {
+      canopen::sendPos(deviceID, pos);
+      pos += 100;
+      canopen::sendSync(10);
+    }
+    for (int i=1000; i>0; i--) {
+      canopen::sendPos(deviceID, pos);
+      pos -= 100;
+      canopen::sendSync(10);
+    }
   }
-  for (int i=1000; i>0; i--) {
-    canopen::sendPos(pos);
-    pos -= 100;
-    canopen::sendSync(10);
-    } */
 
   // shutdown device and connection:
   canopen::enableBreak(deviceID);

@@ -10,7 +10,7 @@
 int main(int argc, char *argv[]) {
   if (argc < 2) {
     std::cout << "Please call the program with the CAN deviceIDs,"
-	      << "e.g. './multiple_devices 1 2 3 4 5 6'" << std::endl;
+	      << "e.g. './multiple_devices 3 4 5 6 7 8'" << std::endl;
     return -1;
   }
   
@@ -29,7 +29,6 @@ int main(int argc, char *argv[]) {
   // put NMT and 402 state machines for devices  to operational:
   for (auto it : deviceIDs) canopen::faultReset(it);
   canopen::initNMT();
-
   for (auto it : deviceIDs) 
     if (!canopen::initDevice(it)) {
       std::cout << "Device " << it << " could not be initialized; aborting." << std::endl;
@@ -37,13 +36,13 @@ int main(int argc, char *argv[]) {
     } 
   
   // performing homing of devices:
-     for (auto it : deviceIDs) {
+  for (auto it : deviceIDs) {
     std::cout << "homing device: " << it << std::endl;
     if (!canopen::homing(it)) {
       std::cout << "Homing was not successful; aborting." << std::endl;
       return -1;
     }  
-    }  
+  }  
 
   // put devices into interpolated_position_mode:
   for (auto it : deviceIDs)
@@ -54,22 +53,19 @@ int main(int argc, char *argv[]) {
     }
   
   // move a bit in IP mode:
-  // 7,8: i=250
-  // 6
- 
   canopen::sendSync(10);
   canopen::sendSync(10);
   int pos = 0;
   for (int j=0; j<10; j++) {
-  for (int i=0; i<=300; i++) {
-    for (auto it : deviceIDs) canopen::sendPos(it, pos);
-    pos += 35;
-    canopen::sendSync(10);
-  }
-  for (int i=300; i>0; i--) {
-    for (auto it : deviceIDs) canopen::sendPos(it, pos);
-    pos -= 35;
-    canopen::sendSync(10);
+    for (int i=0; i<=300; i++) {
+      for (auto it : deviceIDs) canopen::sendPos(it, pos);
+      pos += 35;
+      canopen::sendSync(10);
+    }
+    for (int i=300; i>0; i--) {
+      for (auto it : deviceIDs) canopen::sendPos(it, pos);
+      pos -= 35;
+      canopen::sendSync(10);
     }   
   }
   
@@ -81,7 +77,5 @@ int main(int argc, char *argv[]) {
     canopen::shutdownDevice(it);
   }
   canopen::closeConnection(); 
-
-  std::cout << "ended" << std::endl;
   return 0;
 }
