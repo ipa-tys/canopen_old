@@ -295,21 +295,22 @@ namespace canopen {
     EDSClass NMT("NMT","0", 0x0, 0x0, 1, "wo");
     NMT.constants_.insert("stop_remote_node", 0xFF, 0x02);
     NMT.constants_.insert("start_remote_node", 0xFF, 0x01);
-    // NMT.constants_.insert("reset_application", 0xFF, 0x81);
+    NMT.constants_.insert("reset_application", 0xFF, 0x81);
     d_.insert(NMT);
     //NMT.constants_.insert(Constant("bla", 10,20));
     //d_.insert(NMT); 
     // d_.insert(EDSClass("NMT","0", 0x0, 0x0, 1, "wo", bm0));
 
     EDSClass ControlWord("controlword", "6040_0", 0x6040, 0x0, 2, "rw");
+    ControlWord.constants_.insert("disable_voltage", 0xFFFF, 0x1);
     ControlWord.constants_.insert("sm_shutdown", 0xFFFF, 0x6);
     ControlWord.constants_.insert("sm_switch_on", 0xFFFF, 0x7);
-    ControlWord.constants_.insert("sm_enable_operation", 0xFFFF, 0x6);
+    ControlWord.constants_.insert("sm_enable_operation", 0xFFFF, 0xF);   // 0x6
     ControlWord.constants_.insert("start_homing|enable_ip_mode", 0xFFFF, 0x1f);
-    ControlWord.constants_.insert("reset_fault", 0xFFFF, 0x80);
+    ControlWord.constants_.insert("reset_fault_0", 0xFFFF, 0x00);
+    ControlWord.constants_.insert("reset_fault_1", 0xFFFF, 0x80);
     d_.insert(ControlWord);
 
-    // statusword (0x6041): // todo
     EDSClass StatusWord("statusword", "6041_0", 0x6041, 0x0, 2, "ro");
     StatusWord.constants_.insert("not_ready_to_switch_on", 0x004F, 0);
     StatusWord.constants_.insert("switch_on_disabled", 0x004F, 0x0040);
@@ -319,13 +320,18 @@ namespace canopen {
     StatusWord.constants_.insert("quick_stop_active", 0x006F, 0x0007);
     StatusWord.constants_.insert("fault_reaction_active", 0x004F, 0x000F);
     StatusWord.constants_.insert("fault_ds402", 0x004F, 0x0008);
+    StatusWord.constants_.insert("voltage_enabled", 0x0010, 0x0010);
+    StatusWord.constants_.insert("warning", 0x0080, 0x0080);
+    StatusWord.constants_.insert("drive_is_moving", 0x0100, 0x0100);
+    StatusWord.constants_.insert("remote", 0x0200, 0x0200);
+    StatusWord.constants_.insert("target_reached", 0x0400, 0x0400);
+    StatusWord.constants_.insert("internal_limit_active", 0x0800, 0x0800);
+    StatusWord.constants_.insert("set_point_acknowledge/speed_0/homing_attained/ip_mode_active", 0x1000, 0x1000);
+    StatusWord.constants_.insert("following_error/homing_error", 0x2000, 0x2000);
+    StatusWord.constants_.insert("manufacturer_statusbit", 0x4000, 0x4000);
+    StatusWord.constants_.insert("drive_referenced", 0x8000, 0x8000);
     d_.insert(StatusWord);
-    /*bmtype bm6041;
-    bm6041.insert(bmtype::value_type("sm_shutdown",0x6));
-    d_.insert(EDSClass("statusword","6041_0", 0x6041, 0x0, 2, "ro", bm6041));*/
-
     
-    // modes_of_operation (0x6060)
     EDSClass ModesOfOperation("modes_of_operation", "6060_0", 0x6060, 0x0, 1, "wo");
     ModesOfOperation.constants_.insert("homing_mode", 0xFF, 6);
     ModesOfOperation.constants_.insert("profile_position_mode", 0xFF, 1);
@@ -334,6 +340,15 @@ namespace canopen {
     ModesOfOperation.constants_.insert("interpolated_position_mode", 0xFF, 7);
     d_.insert(ModesOfOperation);
 
+    EDSClass ModesOfOperationDisplay("modes_of_operation_display", "6061_0", 0x6061, 0x0, 1, "ro");
+    ModesOfOperationDisplay.constants_.insert("homing_mode", 0xFF, 6);
+    ModesOfOperationDisplay.constants_.insert("profile_position_mode", 0xFF, 1);
+    ModesOfOperationDisplay.constants_.insert("profile_velocity_mode", 0xFF, 3);
+    ModesOfOperationDisplay.constants_.insert("torque_profile_mode", 0xFF, 4);
+    ModesOfOperationDisplay.constants_.insert("interpolated_position_mode", 0xFF, 7);
+    d_.insert(ModesOfOperationDisplay); 
+
+    
     /*bmtype bm6061 = bm6060;
       d_.insert(EDSClass("modes_of_operation_display", "6061_0", 0x6061, 0x0, 1, "ro", bm6061)); */
 
@@ -448,5 +463,23 @@ namespace canopen {
     return it->alias_;
   }
 
-  
+  // ------------- wrapper functions for sending SDO, PDO, and NMT messages: --
+
+  Message* sendSDO(uint16_t deviceID, std::string alias,
+		   std::string param, bool writeMode) {
+    Message* m;
+    if (param != "") // for SDOs that don't take parameter (e.g. statusword)
+      m = new Message(deviceID, alias, eds.getConst(alias, param));
+    else 
+      m = new Message(deviceID, alias);
+    m->writeCAN(writeMode);
+    Message* reply = m->waitForSDOAnswer();
+    delete m;
+    return reply;
+  }
+
+  void sendNMT(std::string param) {
+    Message(0, "NMT", eds.getConst("NMT", param)).writeCAN();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+  }
 }

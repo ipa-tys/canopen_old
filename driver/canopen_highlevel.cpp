@@ -2,110 +2,122 @@
 
 namespace canopen {
 
-   bool openConnection(std::string devName) {
+  // ---------------------- general communication commands: -------------------
+
+  bool openConnection(std::string devName) {
     h = LINUX_CAN_Open(devName.c_str(), O_RDWR);
-    if (!h) {
-      // std::cout << "Cannot open CAN device" << std::endl;
-      return false;
-    }
+    if (!h) return false;
     errno = CAN_Init(h, CAN_BAUD_500K, CAN_INIT_TYPE_ST);
     return true;
   }
-
-  void listener_func() {
+  
+  void closeConnection() { CAN_Close(h); }
+  
+  void listenerFunc() {
     TPCANRdMsg m;
     Message* msg;
-    
-    while (true) {
-      // std::cout << "hi, listener" << std::endl;
-      msg = Message::readCAN(true);
-      // std::cout << "message received listener" << std::endl;
-    }
+    while (true) msg = Message::readCAN(true);
   }
 
-
-  void initListener() {
-    std::thread listener_thread(listener_func);
+  void initListenerThread() {
+    std::thread listener_thread(listenerFunc);
     listener_thread.detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
+  
+  bool initDevice(uint16_t deviceID) {
+    // todo: for multiple devices have to separate NMT and 402 state machine
+    sendSDO(deviceID, "controlword", "fault_reset");
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+    // if (sendSDO(deviceID, "statusword", "", false)->checkForConstant("switch_on_disabled"))
+    sendNMT("stop_remote_node");   // todo: change this!, check NMT state
+    sendNMT("start_remote_node");
 
-  void ipMode(uint16_t deviceID) {
-    Message(deviceID, "modes_of_operation",
-	    eds.getConst("modes_of_operation", "interpolated_position_mode")).writeCAN();
+    sendSDO(deviceID, "controlword", "sm_shutdown");
+    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("ready_to_switch_on")) {
+      std::cout << "waiting.............." << std::endl;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    sendSDO(deviceID, "controlword", "sm_switch_on");
+    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
+      std::cout << "waiting.............." << std::endl;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    // sendSDO(deviceID, "controlword", "sm_enable_operation");
+    // Message* SDOreply = sendSDO(deviceID, "statusword", "", false);
+    // return "true" if device is indeed operational ("false" otherwise):
+    // return SDOreply->checkForConstant("operation_enable");
+    return true;  // todo: implement time out
+  }
+
+  bool shutdownDevice(uint16_t deviceID) {
+    sendSDO(deviceID, "controlword", "sm_shutdown");
+    return sendSDO(deviceID, "statusword", "", false)->checkForConstant("ready_to_switch_on");
+  }
+
+  void sendSync(uint32_t sleepTime_msec) {
+    Message(0, "Sync").writeCAN(); 
+    if (sleepTime_msec > 0)
+      std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime_msec));
   }
   
-  Message* controlWord(uint16_t deviceID, std::string mode) { // todo: remove
-    Message m(deviceID, "controlword", eds.getConst("controlword", mode));
-    m.writeCAN();
-    Message* statusMsg = m.waitForSDOAnswer();
-    std::cout << "controlword answer:" << std::endl;
-    statusMsg->debugPrint();
-    return statusMsg;
+  // ------------- motor functions: -------------------------------------------
+
+  bool homing(uint16_t deviceID) {
+    sendSDO(deviceID, "modes_of_operation", "homing_mode");
+    sendSDO(deviceID, "controlword", "start_homing|enable_ip_mode");
+
+    // wait for drive to start moving:
+    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("drive_is_moving"))
+      std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
+    
+    // wait for drive to stop moving:
+    while (sendSDO(deviceID, "statusword", "", false)->checkForConstant("drive_is_moving")) 
+      std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
+    
+    // return true if drive signals it is referenced; false otherwise:
+    return sendSDO(deviceID, "statusword", "", false)->checkForConstant("drive_referenced");
   }
 
-    Message* sendSDO(uint16_t deviceID, std::string alias, std::string param, bool writeMode) {
-    Message* m;
-    if (param != "") 
-      m = new Message(deviceID, alias, eds.getConst(alias, param));
-    else {
-      m = new Message(deviceID, alias);
-      std::cout << "HERE!!!!! " << alias << "    " << static_cast<int>(writeMode) << std::endl;
+  bool driveMode(uint16_t deviceID, std::string mode) {
+    sendSDO(deviceID, "modes_of_operation", mode);
+    return sendSDO(deviceID, "modes_of_operation_display", "", false)->checkForConstant(mode);
+  }
+  
+  bool releaseBreak(uint16_t deviceID) {
+    sendSDO(deviceID, "controlword", "sm_enable_operation");
+    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("operation_enable")) {
+      std::cout << "waiting.............." << std::endl;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-    m->writeCAN(writeMode);
-    Message* reply = m->waitForSDOAnswer();
-    delete m;
-    return reply;
+    return true; // todo timeout
   }
 
-  void sendNMT(std::string param) {
-    Message(0, "NMT", eds.getConst("NMT", param)).writeCAN();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20)); 
+  bool enableBreak(uint16_t deviceID) {
+    sendSDO(deviceID, "controlword", "sm_switch_on");
+    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
+      std::cout << "waiting.............." << std::endl;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    return true; // todo timeout
   }
 
-  void sendSync() { Message(0, "Sync").writeCAN(); }
-  void sendPos(std::string alias, uint32_t pos) {
+  bool enableIPmode(uint16_t deviceID) {
+    bool ok = true;
+    ok = ok & enableBreak(deviceID);
+    ok = ok & driveMode(deviceID, "interpolated_position_mode");
+    ok = ok & releaseBreak(deviceID);
+    return ok; // todo
+  }
+
+  void sendPos(uint32_t pos) {  // todo: more flexible approach with device ID
     std::vector<uint32_t> v;
     v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
     v.push_back(0);
     v.push_back(pos);
-    Message(alias, v).writeCAN();
+    Message("schunk_default_rPDO_12", v).writeCAN();
   }
-  void closeConnection() { CAN_Close(h); }
-  void stopRemoteNode() { // only for testing
-    std::cout << "stop remote node" << std::endl;
-    Message(0, "NMT", eds.getConst("NMT", "stop_remote_node")).writeCAN();
-  }
-
-  bool initDevice(uint16_t deviceID) {
-    sendNMT("stop_remote_node");
-    sendNMT("start_remote_node");
-    sendSDO(12, "controlword", "sm_shutdown");
-    sendSDO(12, "controlword", "sm_switch_on");
-    sendSDO(12, "controlword", "sm_enable_operation");
-    Message* SDOreply = sendSDO(12, "statusword", "", false);
-    return SDOreply->checkForConstant("operation_enable"); // return "true" if device is indeed operational
-  }
-
-  void homing(uint16_t deviceID, uint32_t sleep_ms) {
-    Message(deviceID, "modes_of_operation", eds.getConst("modes_of_operation", "homing_mode")).writeCAN();
-    Message(deviceID, "controlword", eds.getConst("controlword", "start_homing|enable_ip_mode")).writeCAN();
-    std::this_thread::sleep_for(std::chrono::milliseconds(sleep_ms)); 
-  }
-  Message* statusWord(uint16_t deviceID) {  // todo: remove
-    Message m(deviceID, "statusword");
-    m.writeCAN(false);
-    std::cout << "statusword waiting for answer...." << std::endl;
-    // TPCANMsg msg = 
-    return m.waitForSDOAnswer();
-    // std::cout << "statusword received answer." << std::endl;
-  }  // todo check
-  
-  void modesOfOperationDisplay(uint16_t deviceID) { Message(deviceID, "statusword").writeCAN(false); }
-
-
-
-
 
 }

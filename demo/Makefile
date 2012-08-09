@@ -1,4 +1,10 @@
-all: test_min2
+all: single_device
+
+single_device: single_device.o
+	g++ single_device.o -o single_device -lpthread -lcanopen -lpcan
+
+single_device.o: single_device.cpp
+	g++ -c single_device.cpp -std=c++0x
 
 test_min: test_min.o
 	g++ test_min.o -o test_min -lpthread -lcanopen
@@ -13,5 +19,5 @@ test_min2.o: test_min2.cpp
 	g++ -c test_min2.cpp -std=c++0x
 
 clean:
-	\rm -f *.o *~ test_min test_min2
+	\rm -f *.o *~ test_min test_min2 single_device
 

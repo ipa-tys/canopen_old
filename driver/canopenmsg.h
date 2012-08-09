@@ -70,8 +70,15 @@ namespace canopen {
   
   // todo: add a flag to openConnection + static member variable in Message that performs logging of in- and outgoing messages with timestamp
   
+  // wrapper functions for sending SDO, PDO, and NMT messages
+  // sendSDO calls deliver the device response as return value: 
+  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param="", bool writeMode=true);
+  void sendNMT(std::string param);
+  // todo: generic sendPDO
 
+  // only for testing purposes, print map of sent SDOs waiting for reply:
+  void debug_show_pendingSDOReplies(); 
 }
 
-// todo: message caching; data changing of existing messages (for max. efficiency)
+// todo (possibly): message caching; data changing of existing messages (for max. efficiency)
 #endif
