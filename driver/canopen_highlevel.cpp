@@ -24,7 +24,6 @@ namespace canopen {
     listener_thread.detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-  
 
   void faultReset(uint16_t deviceID) {
     sendSDO(deviceID, "controlword", "fault_reset");

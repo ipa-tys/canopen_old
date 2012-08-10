@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
   canopen::sendSync(10);
   canopen::sendSync(10);
   int pos = 0;
-  for (int j=0; j<3; j++) {
+  for (int j=0; j<2; j++) {
     for (int i=0; i<500; i++) {
       canopen::sendPos(deviceID, pos);
       pos += 100;

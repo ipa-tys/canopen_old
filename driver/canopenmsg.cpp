@@ -3,29 +3,21 @@
 #include <libpcan.h>
 #include <set>
 #include <map>
+#include <queue>
 #include "canopenmsg.h"
 
 namespace canopen {
 
+  bool queue_incoming_PDOs = true;
   HANDLE h;
   EDSDict eds;
   PDODict pdo;
-  std::set<std::string> pendingReplies; // todo: remove
-  // todo: make this map threadsafe:
+  // todo: make this map thread-safe:
   std::map<std::string, Message* > pendingSDOReplies;
+  std::queue<Message> incomingPDOs;
+  std::queue<Message> outgoingPDOs;
 
-  // std::thread listener_thread;
-  // listener_thread(listener_func);
-  // todo: message queue
-
-  /*std::string Message::createMsgHash(TPCANRdMsg m) { // COBID_index_subindex (decimal)
-    std::string ss = std::to_string(nodeID_) + "_" +
-      std::to_string(m.Msg.DATA[1] + (m.Msg.DATA[2]<<8)) + "_" +
-      std::to_string(m.Msg.DATA[3]);
-    return ss;
-    }*/
-
-  std::string Message::createMsgHash(TPCANMsg m) { // COBID_index_subindex (decimal)
+  std::string Message::createMsgHash(TPCANMsg m) { 
     std::string ss = std::to_string(nodeID_) + "_" +
       std::to_string(m.DATA[1] + (m.DATA[2]<<8)) + "_" +
       std::to_string(m.DATA[3]);
@@ -44,12 +36,20 @@ namespace canopen {
   Message::Message(TPCANRdMsg m) {  // process messages coming in from the devices
     // printf("hey\n");
     // printf("%02x\n", m.Msg.ID);
-    if (pdo.cobIDexists(m.Msg.ID)) {  // PDO
-      /*  std::cout << "PDO recognized!" << std::endl;
-      
+    std::cout << "incoming: " << m.Msg.ID << std::endl;
+    if (m.Msg.ID >= 0x180 && m.Msg.ID <= 0x4ff) { // PDO
+    // if (pdo.cobIDexists(m.Msg.ID)) {  // PDO
+      std::cout << "PDO recognized!!!!!!!!!" << std::endl;
+      for (int i=0; i<8; i++) printf("%02x ", m.Msg.DATA[i]);
+      printf("\n");
+
       alias_ = pdo.getAlias(m.Msg.ID);
-      nodeID_ = pdo.getNodeID(alias_);
-      
+      std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
+      int i=0;
+      while (i<3 && indices[i+1] < m.Msg.ID) i++;
+      nodeID_ = m.Msg.ID - indices[i];
+      std::cout << "Alias: " << alias_ << ",  nodeID: " << static_cast<int>(nodeID_) << std::endl;
+
       std::vector<std::string> components = pdo.getComponents(alias_);
       std::cout << "COMPONENTS:" << std::endl;
       for (int i=0; i<components.size(); i++)
@@ -57,7 +57,6 @@ namespace canopen {
       std::cout << std::endl;
 
       std::vector<uint32_t> lengths;
-
       for (auto comp:components) lengths.push_back(eds.getLen(comp));
       int pos = 0;
       for (int i=0; i<components.size(); i++) {
@@ -72,12 +71,14 @@ namespace canopen {
       for (int i=0; i<lengths.size(); i++)
 	std::cout << lengths[i] << "  ";
       std::cout << std::endl;
-
      
       std::cout << "VALUES:" << std::endl;
       for (int i=0; i<values_.size(); i++) std::cout << values_[i] << "  ";
       std::cout << std::endl;
-      */
+
+      incomingPDOs.push(*this);
+      std::cout << "incomingPDOs queue size: " << incomingPDOs.size() << std::endl;
+      
       
     } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
       // std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -349,6 +350,11 @@ namespace canopen {
     ModesOfOperationDisplay.constants_.insert("interpolated_position_mode", 0xFF, 7);
     d_.insert(ModesOfOperationDisplay); 
 
+    EDSClass TorqueActualValue("torque_actual_value", "6077_0", 0x6077, 0x0, 2, "rw");
+    d_.insert(TorqueActualValue);
+
+    EDSClass PositionActualValue("position_actual_value", "6064_0", 0x6064, 0x0, 4, "rw");
+    d_.insert(PositionActualValue);
     
     /*bmtype bm6061 = bm6060;
       d_.insert(EDSClass("modes_of_operation_display", "6061_0", 0x6061, 0x0, 1, "ro", bm6061)); */
@@ -383,6 +389,11 @@ namespace canopen {
     comp2.push_back("torque_actual_value");
     comp2.push_back("position_actual_value");
     d_.insert(PDOClass("schunk_default_tPDO", 0x180, comp2));
+
+    std::vector<std::string> comp3;
+    comp3.push_back("notused64");
+    d_.insert(PDOClass("schunk_debug_tPDO", 0x480, comp3));
+
 
     // Schunk  tPDO for device ID 12:
     /*
@@ -428,20 +439,37 @@ namespace canopen {
     return it->cobID_;
   }
 
-  std::string PDODict::getAlias(uint16_t cobID) {
+  std::string PDODict::getAlias(uint16_t cobID) { // only used for incoming PDOs
+    uint16_t index;
+    std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
+    int i=0;
+    while (i<3 && indices[i+1] < cobID) i++;
+    index = indices[i];
     typedef PDOClassSet::nth_index<1>::type PDOClassSet_by_cobID;
-    PDOClassSet_by_cobID::iterator it=d_.get<1>().find(cobID);
+    PDOClassSet_by_cobID::iterator it=d_.get<1>().find(index); 
     return it->alias_;
   }
 
-  /*  uint8_t PDODict::getNodeID(std::string alias) {
+  // todo: remove!
+  uint16_t PDODict::getNodeID(std::string alias) {
     typedef PDOClassSet::nth_index<0>::type PDOClassSet_by_alias;
     PDOClassSet_by_alias::iterator it=d_.get<0>().find(alias);
-    return it->nodeID_;
+    uint16_t cobID = it->cobID_;
+    std::cout << "getNodeID: " << alias << "    " << cobID << std::endl;
+    std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
+    int i=0;
+    while (i<3 && indices[i+1] < cobID) i++;
+    uint16_t nodeID = cobID - indices[i];
+    return nodeID;
+    // return it->cobID_;
+  }
 
-    }*/
-
+  // todo: remove!
   bool PDODict::cobIDexists(uint16_t cobID) {
+    /*for (auto it=PDOClassSet_by_cobID.begin(); it!=PDOClassSet_by_cobID.end(); it++) {
+      std::cout << "hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" << std::endl;
+      }*/
+
     typedef PDOClassSet::nth_index<1>::type PDOClassSet_by_cobID;
     PDOClassSet_by_cobID::iterator it=d_.get<1>().find(cobID);
     return it != d_.get<1>().end();
@@ -460,7 +488,6 @@ namespace canopen {
     Constants cc = it->constants_;
     return cc.getMask(constname);
   }
-
 
   uint8_t EDSDict::getLen(std::string alias) {
     bmtype bm;

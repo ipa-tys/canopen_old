@@ -24,6 +24,4 @@ namespace canopen {
     constants_.insert(Constant(name, mask, value));
   }
 
-
-
 } 

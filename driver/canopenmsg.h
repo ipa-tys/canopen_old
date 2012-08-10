@@ -38,9 +38,9 @@ namespace canopen {
   public:
     PDODict();
     std::vector<std::string> getComponents(std::string alias);
-    uint16_t getCobID(std::string alias);
+    uint16_t getCobID(std::string alias); // todo: still needed?
     std::string getAlias(uint16_t cobID);
-    uint8_t getNodeID(std::string alias);
+    uint16_t getNodeID(std::string alias);
     bool cobIDexists(uint16_t cobID);
   private:
     PDOClassSet d_;
