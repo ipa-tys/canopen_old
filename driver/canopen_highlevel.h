@@ -7,6 +7,7 @@
 
 namespace canopen {
   extern EDSDict eds;
+  extern PDODict pdo;
 
   // general communication commands:
   bool openConnection(std::string devName); // initialize device driver

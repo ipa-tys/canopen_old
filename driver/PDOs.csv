@@ -1,0 +1,3 @@
+schunk_default_rPDO 0x200 controlword notused16 interpolation_data_record:ip_data_position
+schunk_default_tPDO 0x180 statusword torque_actual_value position_actual_value
+schunk_debug_rPDO 0x480 notused64

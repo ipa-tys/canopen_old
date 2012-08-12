@@ -17,8 +17,6 @@
 
 
 namespace canopen {
-  // extern HANDLE h;
-  // uint32_t getEDSconst(std::string alias, std::string constname);
 
   class EDSDict {
   public:
@@ -29,8 +27,6 @@ namespace canopen {
     uint16_t getIndex(std::string alias);
     uint8_t getSubindex(std::string alias);
     std::string getAlias(uint16_t index, uint8_t subindex);
-
-    // private:
     EDSClassSet d_;
   };
 
@@ -40,20 +36,17 @@ namespace canopen {
     std::vector<std::string> getComponents(std::string alias);
     uint16_t getCobID(std::string alias); // todo: still needed?
     std::string getAlias(uint16_t cobID);
-    uint16_t getNodeID(std::string alias);
-    bool cobIDexists(uint16_t cobID);
   private:
     PDOClassSet d_;
   };
 
   class Message {  // abstract representation of CANopen messages
   public:
-    Message(TPCANRdMsg m); // construct message from raw CAN message (for messages coming in from bus)
+    Message(TPCANRdMsg m); // constructor for messages coming in from bus (TPCANRdMsg)
     Message(uint8_t nodeID, std::string alias, uint32_t value=0); // user-constructed non-PDO message
     Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values); // user-constructed PDO message
     void writeCAN(bool writeMode=true);
     static Message* readCAN(bool blocking=true);
-    // std::vector<std::string> parse(); // todo: not needed? / translate message from device into human-readable 
     Message* waitForSDOAnswer();
     void debugPrint();
     void debugPrintFlags();
@@ -67,8 +60,9 @@ namespace canopen {
     std::string createMsgHash();
     std::string createMsgHash(TPCANMsg m);
   };
-  
-  // todo: add a flag to openConnection + static member variable in Message that performs logging of in- and outgoing messages with timestamp
+  // todo (optional): add a flag to openConnection + static member variable in Message that performs
+  // logging of in- and outgoing messages with timestamp
+  // todo (optional): message caching; data changing of existing messages (for max. efficiency)
   
   // wrapper functions for sending SDO, PDO, and NMT messages
   // sendSDO calls deliver the device response as return value: 
@@ -79,6 +73,4 @@ namespace canopen {
   // only for testing purposes, print map of sent SDOs waiting for reply:
   void debug_show_pendingSDOReplies(); 
 }
-
-// todo (possibly): message caching; data changing of existing messages (for max. efficiency)
 #endif

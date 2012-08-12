@@ -27,6 +27,9 @@ install:
 	cp canopen_highlevel.h /usr/include
 	cp canopenmsg.h /usr/include
 	cp canopen_internal.h /usr/include
+	cp indices.csv ~/.canopen/
+	cp constants.csv ~/.canopen/
+	cp PDOs.csv ~/.canopen/
 
 # cp libcanopenmsg.so /usr/lib
 # cp libcanopen_internal.so /usr/lib

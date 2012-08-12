@@ -4,18 +4,217 @@
 #include <set>
 #include <map>
 #include <queue>
+#include <regex>
+#include <pwd.h>
+#include <fstream>
 #include "canopenmsg.h"
 
 namespace canopen {
+  // -------------- namespace-global variables:
 
   bool queue_incoming_PDOs = true;
   HANDLE h;
   EDSDict eds;
   PDODict pdo;
-  // todo: make this map thread-safe:
-  std::map<std::string, Message* > pendingSDOReplies;
-  std::queue<Message> incomingPDOs;
+  std::map<std::string, Message* > pendingSDOReplies; // todo: make thread-safe
+  std::queue<Message> incomingPDOs; // todo: make thread_safe
 
+  // -------------- EDSDict member functions:
+
+  EDSDict::EDSDict() { // constructor parses indices.csv, constants.csv, PDOs.csv
+    int uid = getuid();
+    passwd * pw = getpwuid(uid);
+    std::string homeDir = pw->pw_dir;
+    std::ifstream fin;
+    std::string ll;
+
+    typedef struct {
+      std::string constname;
+      uint64_t mask;
+      uint64_t value;
+    } consts;
+
+    // parse constants:
+    std::multimap<std::string, consts > constants;
+    std::string constFileName = homeDir + "/.canopen/constants.csv";
+    fin.open(constFileName);
+    while (std::getline(fin, ll)) {
+      std::istringstream x(ll);
+      std::string alias;
+      consts c;
+      x >> alias;
+      x >> c.constname;
+      x >> std::hex >> c.mask;
+      x >> std::hex >> c.value;
+      constants.insert(std::make_pair(alias, c));
+    }
+    fin.close();
+    
+    // parse indices into eds data structure:
+    std::string indexFileName = homeDir + "/.canopen/indices.csv";
+    fin.open(indexFileName);
+    while(std::getline(fin, ll)) {
+      std::istringstream x(ll); 
+      std::string alias;
+      uint16_t index;
+      uint8_t subindex;
+      uint8_t length;
+      std::string attr;
+      x >> alias;
+      x >> std::hex >> index;
+      x >> std::hex >> subindex;
+      x >> length;
+      x >> attr;
+      EDSClass* xx = new EDSClass(alias, index, subindex, length, attr);
+      
+      // now insert constants:
+      auto it = constants.find(alias);
+      if (it != constants.end()) {
+	auto ret = constants.equal_range(alias);
+	for (auto it1=ret.first; it1!=ret.second; it1++)
+	  xx->constants_.insert(it1->second.constname, it1->second.mask, it1->second.value);
+      }
+
+      d_.insert(*xx);
+    }
+  }
+
+  uint32_t EDSDict::getConst(std::string alias, std::string constname) {
+    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
+    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
+    Constants cc = it->constants_;
+    return cc.getValue(constname);
+  }
+
+  uint32_t EDSDict::getMask(std::string alias, std::string constname) {
+    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
+    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
+    Constants cc = it->constants_;
+    return cc.getMask(constname);
+  }
+
+  uint8_t EDSDict::getLen(std::string alias) {
+    bmtype bm;
+    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
+    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
+    return it->length_;
+  }
+
+  uint16_t EDSDict::getIndex(std::string alias) {
+    bmtype bm;
+    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
+    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
+    return it->index_;
+  }
+
+  uint8_t EDSDict::getSubindex(std::string alias) {
+    bmtype bm;
+    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
+    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
+    return it->subindex_;
+  }
+
+  std::string EDSDict::getAlias(uint16_t index, uint8_t subindex) {
+    EDSClassSet::iterator it = d_.find(boost::make_tuple(index, subindex));
+    return it->alias_;
+  }
+
+  // -------------- PDODict member functions:
+
+  PDODict::PDODict() { // todo: assume all devices have same tPDO mapping -- ok?
+    int uid = getuid();
+    passwd * pw = getpwuid(uid);
+    std::string homeDir = pw->pw_dir;
+    std::ifstream fin;
+    std::string ll;
+    std::string PDOfileName = homeDir + "/.canopen/PDOs.csv";
+    fin.open(PDOfileName);
+    
+    while(std::getline(fin, ll)) {
+      std::istringstream x(ll); 
+      std::string alias;
+      uint16_t index;
+      std::string temp;
+      std::vector<std::string> components;
+      x >> alias;
+      x >> std::hex >> index;
+      while (x >> temp) 
+	components.push_back(temp);
+      PDOClass* xx = new PDOClass(alias, index, components);
+      d_.insert(*xx);
+    }
+  }
+
+  std::vector<std::string> PDODict::getComponents(std::string alias) {
+    typedef PDOClassSet::nth_index<0>::type PDOClassSet_by_alias;
+    PDOClassSet_by_alias::iterator it=d_.get<0>().find(alias);
+    return it->components_;
+  }
+
+  uint16_t PDODict::getCobID(std::string alias) {
+    typedef PDOClassSet::nth_index<0>::type PDOClassSet_by_alias;
+    PDOClassSet_by_alias::iterator it=d_.get<0>().find(alias);
+    return it->cobID_;
+  }
+
+  std::string PDODict::getAlias(uint16_t cobID) { // only used for incoming PDOs
+    uint16_t index;
+    std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
+    int i=0;
+    while (i<3 && indices[i+1] < cobID) i++;
+    index = indices[i];
+    typedef PDOClassSet::nth_index<1>::type PDOClassSet_by_cobID;
+    PDOClassSet_by_cobID::iterator it=d_.get<1>().find(index); 
+    return it->alias_;
+  }
+
+  // -------------- Message member functions:
+
+  // user-constructed non-PDO message:
+  Message::Message(uint8_t nodeID, std::string alias, uint32_t value):
+    nodeID_(nodeID), alias_(alias) {
+    values_.push_back(value);
+  }
+
+  // user-constructed PDO message:
+  Message::Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values):
+    nodeID_(nodeID), alias_(alias), values_(values) {}
+
+  // constructor for messages coming in from bus (TPCANRdMsg):
+  Message::Message(TPCANRdMsg m) {  
+    if (m.Msg.ID >= 0x180 && m.Msg.ID <= 0x4ff) { // incoming PDOs
+      alias_ = pdo.getAlias(m.Msg.ID);
+
+      std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
+      int i=0;
+      while (i<3 && indices[i+1] < m.Msg.ID) i++;
+      nodeID_ = m.Msg.ID - indices[i];
+
+      std::vector<std::string> components = pdo.getComponents(alias_);
+
+      std::vector<uint32_t> lengths;
+      for (auto comp:components) lengths.push_back(eds.getLen(comp));
+      int pos = 0;
+      for (int i=0; i<components.size(); i++) {
+	values_.push_back(0);
+	for (int j=0; j<lengths[i]; j++) {
+	  values_[i] += (static_cast<uint32_t>(m.Msg.DATA[pos]) << (j*8));
+	  pos++;
+	}
+      }
+      incomingPDOs.push(*this);
+      std::cout << "incomingPDOs queue size: " << incomingPDOs.size() << std::endl;
+
+    } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
+      uint16_t index = m.Msg.DATA[1] + (m.Msg.DATA[2]<<8);
+      uint8_t subindex = m.Msg.DATA[3];
+      nodeID_ = m.Msg.ID - 0x580;
+      alias_ =  eds.getAlias(index, subindex);
+      values_.push_back(m.Msg.DATA[4] + (m.Msg.DATA[5]<<8) + (m.Msg.DATA[6]<<8) + (m.Msg.DATA[7]<<8));
+      std::string ss = createMsgHash();
+      pendingSDOReplies[ss] = this;
+    }
+  }
 
   std::string Message::createMsgHash(TPCANMsg m) { 
     std::string ss = std::to_string(nodeID_) + "_" +
@@ -33,91 +232,6 @@ namespace canopen {
     return ss;
   }
 
-  Message::Message(TPCANRdMsg m) {  // process messages coming in from the devices
-    // printf("hey\n");
-    // printf("%02x\n", m.Msg.ID);
-    std::cout << "incoming: " << m.Msg.ID << std::endl;
-    if (m.Msg.ID >= 0x180 && m.Msg.ID <= 0x4ff) { // PDO
-    // if (pdo.cobIDexists(m.Msg.ID)) {  // PDO
-      std::cout << "PDO recognized!!!!!!!!!" << std::endl;
-      for (int i=0; i<8; i++) printf("%02x ", m.Msg.DATA[i]);
-      printf("\n");
-
-      alias_ = pdo.getAlias(m.Msg.ID);
-      std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
-      int i=0;
-      while (i<3 && indices[i+1] < m.Msg.ID) i++;
-      nodeID_ = m.Msg.ID - indices[i];
-      std::cout << "Alias: " << alias_ << ",  nodeID: " << static_cast<int>(nodeID_) << std::endl;
-
-      std::vector<std::string> components = pdo.getComponents(alias_);
-      std::cout << "COMPONENTS:" << std::endl;
-      for (int i=0; i<components.size(); i++)
-	std::cout << components[i] << "  ";
-      std::cout << std::endl;
-
-      std::vector<uint32_t> lengths;
-      for (auto comp:components) lengths.push_back(eds.getLen(comp));
-      int pos = 0;
-      for (int i=0; i<components.size(); i++) {
-	values_.push_back(0);
-	for (int j=0; j<lengths[i]; j++) {
-	  values_[i] += (static_cast<uint32_t>(m.Msg.DATA[pos]) << (j*8));
-	  pos++;
-	}
-      }
-
-      std::cout << "LENGTHS:" << std::endl;
-      for (int i=0; i<lengths.size(); i++)
-	std::cout << lengths[i] << "  ";
-      std::cout << std::endl;
-     
-      std::cout << "VALUES:" << std::endl;
-      for (int i=0; i<values_.size(); i++) std::cout << values_[i] << "  ";
-      std::cout << std::endl;
-
-      incomingPDOs.push(*this);
-      std::cout << "incomingPDOs queue size: " << incomingPDOs.size() << std::endl;
-      
-      
-    } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
-      // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-      std::cout << "------SDO reply recognized!--------" << std::endl;
-      printf("%02x %d %d\n", m.Msg.ID, m.Msg.MSGTYPE, m.Msg.LEN);
-      for (int i=0; i<m.Msg.LEN; i++) printf("%02x ", m.Msg.DATA[i]);
-      printf("\n");
-
-      uint16_t index = m.Msg.DATA[1] + (m.Msg.DATA[2]<<8);
-      uint8_t subindex = m.Msg.DATA[3];
-
-      nodeID_ = m.Msg.ID - 0x580;
-      alias_ =  eds.getAlias(index, subindex);
-      values_.push_back(m.Msg.DATA[4] + (m.Msg.DATA[5]<<8) + (m.Msg.DATA[6]<<8) + (m.Msg.DATA[7]<<8));
-
-      std::cout << "Pending replies:" << std::endl;
-      // debug_show_pendingSDOReplies();
-
-      std::string ss = createMsgHash();
-      std::cout << "message hash: " << ss << std::endl;
-      /* TPCANMsg *m1 = new TPCANMsg;
-      m1->ID = m.Msg.ID;
-      m1->MSGTYPE = m.Msg.MSGTYPE;
-      m1->LEN = m.Msg.LEN;
-      for (int i=0; i<m.Msg.LEN; i++) m1->DATA[i] = m.Msg.DATA[i]; */
-      // pendingSDOReplies[ss] = m1;
-      pendingSDOReplies[ss] = this;
-
-      // pendingSDOReplies[ss] = &m.Msg; // put received reply in hashtable
-      // pendingReplies.erase(ss);
-    }
-
-    // std::cout << dd << std::endl;
-  }
-
-  Message::Message(uint8_t nodeID, std::string alias, uint32_t value):nodeID_(nodeID), alias_(alias) {
-    values_.push_back(value);
-  }
-
   bool Message::checkForConstant(std::string constName) {
     uint32_t value = values_[0];
     uint32_t constValue = eds.getConst(alias_, constName);
@@ -128,9 +242,6 @@ namespace canopen {
     std::cout << "value & constMask: " << (value & mask) << std::endl;
     return (value & mask) == constValue;
   }
-
-  Message::Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values):
-    nodeID_(nodeID), alias_(alias), values_(values) {}
 
   void Message::writeCAN(bool writeMode) {
     TPCANMsg msg;
@@ -225,295 +336,29 @@ namespace canopen {
 
   void Message::debugPrint() {
     std::cout << "MESSAGE debugPrint:" << std::endl;
-    std::cout << "nodeID: " << static_cast<int>(nodeID_) << ", alias: " << alias_ << ", value: " << values_[0] << std::endl;
+    std::cout << "nodeID: " << static_cast<int>(nodeID_) << ", alias: " << alias_ 
+	      << ", value: " << values_[0] << std::endl;
   }
 
   Message* Message::readCAN(bool blocking) { // todo: different blocking modes
-    
     TPCANRdMsg m;
     if ((errno = LINUX_CAN_Read(canopen::h, &m))) {
       perror("receivetest: LINUX_CAN_Read()");
       // return errno;
     }
-    // std::cout << "MESSAGE received!" << std::endl;
-    // msg = new Message(m);
     Message* msg = new Message(m);
     return msg;
   }
 
-  // TPCANMsg
-  Message* Message::waitForSDOAnswer() { // uint16_t deviceID, std::string alias) {
-    std::cout << "now in waitForSDOAnswer" << std::endl;
+  Message* Message::waitForSDOAnswer() { 
     std::string ss = createMsgHash();
-    while (pendingSDOReplies[ss] == nullptr) {
-      // debug_show_pendingSDOReplies();
+    while (pendingSDOReplies[ss] == nullptr)
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    
-    // TPCANMsg* m = pendingSDOReplies[ss];
     Message* m = pendingSDOReplies[ss];
-    std::cout << "waitForSDOAnswer ended!!!!" << std::endl;
-    std::cout << "Here is the reply:" << std::endl;
-    m->debugPrint();
-
-    /*printf("%02x %d %d\n", m->ID, m->MSGTYPE, m->LEN);
-    for (int i=0; i<8; i++) printf("%02x ", m->DATA[i]);
-    printf("\n");*/
-
     pendingSDOReplies.erase(ss);
-    // delete m;
-    debug_show_pendingSDOReplies();
+    // delete m;  todo
     return m;
   } 
-
- 
-
-
-  /* Message* modesOfOperation(uint16_t deviceID, std::string mode) {
-    Message m(deviceID, "modes_of_operation", eds.getConst("modes_of_operation", mode));
-    m.writeCAN();
-    Message* reply = m.waitForSDOAnswer();
-    std::cout << "modes_of_operation answer:" << std::endl;
-    reply->debugPrint();
-    return reply;
-    }*/
-
-
-  EDSDict::EDSDict() {
-    d_.insert(EDSClass("notused16", 0xFFFF, 0xFF, 2, "rw"));   // dummy entry for unused 16 bits in a PDO message
-    d_.insert(EDSClass("notused32", 0xFFFF, 0xFE, 4, "rw"));   // dummy entry for unused 32 bit in a PDO message
-    d_.insert(EDSClass("notused64", 0xFFFF, 0xFD, 8, "rw"));   // dummy entry for unused 64 bit in a PDO message
-
-    d_.insert(EDSClass("interpolation_data_record:ip_data_position",  
-		       0x60C1, 0x1, 4, "rw")); // interpolation_data_record: ip_data_position
-    d_.insert(EDSClass("sync_timeout_factor",  
-		       0x200e, 0x0, 1, "rw"));   // sync_timeout_factor
-    // NMT
-    //bmtype bm0;
-    //bm0.insert(bmtype::value_type("stop_remote_node",0x02));
-    //bm0.insert(bmtype::value_type("start_remote_node",0x01));
-    
-    // d_.insert(EDSClass("NMT","0", 0x0, 0x0, 1, "wo", bm0));
-    EDSClass NMT("NMT", 0x0, 0x0, 1, "wo");
-    NMT.constants_.insert("stop_remote_node", 0xFF, 0x02);
-    NMT.constants_.insert("start_remote_node", 0xFF, 0x01);
-    NMT.constants_.insert("reset_application", 0xFF, 0x81);
-    d_.insert(NMT);
-    //NMT.constants_.insert(Constant("bla", 10,20));
-    //d_.insert(NMT); 
-    // d_.insert(EDSClass("NMT","0", 0x0, 0x0, 1, "wo", bm0));
-
-    EDSClass ControlWord("controlword", 0x6040, 0x0, 2, "rw");
-    ControlWord.constants_.insert("disable_voltage", 0xFFFF, 0x1);
-    ControlWord.constants_.insert("sm_shutdown", 0xFFFF, 0x6);
-    ControlWord.constants_.insert("sm_switch_on", 0xFFFF, 0x7);
-    ControlWord.constants_.insert("sm_enable_operation", 0xFFFF, 0xF);   // 0x6
-    ControlWord.constants_.insert("start_homing|enable_ip_mode", 0xFFFF, 0x1f);
-    ControlWord.constants_.insert("reset_fault_0", 0xFFFF, 0x00);
-    ControlWord.constants_.insert("reset_fault_1", 0xFFFF, 0x80);
-    d_.insert(ControlWord);
-
-    EDSClass StatusWord("statusword", 0x6041, 0x0, 2, "ro");
-    StatusWord.constants_.insert("not_ready_to_switch_on", 0x004F, 0);
-    StatusWord.constants_.insert("switch_on_disabled", 0x004F, 0x0040);
-    StatusWord.constants_.insert("ready_to_switch_on", 0x006F, 0x0021);
-    StatusWord.constants_.insert("switched_on", 0x006F, 0x0023);
-    StatusWord.constants_.insert("operation_enable", 0x006F, 0x0027);
-    StatusWord.constants_.insert("quick_stop_active", 0x006F, 0x0007);
-    StatusWord.constants_.insert("fault_reaction_active", 0x004F, 0x000F);
-    StatusWord.constants_.insert("fault_ds402", 0x004F, 0x0008);
-    StatusWord.constants_.insert("voltage_enabled", 0x0010, 0x0010);
-    StatusWord.constants_.insert("warning", 0x0080, 0x0080);
-    StatusWord.constants_.insert("drive_is_moving", 0x0100, 0x0100);
-    StatusWord.constants_.insert("remote", 0x0200, 0x0200);
-    StatusWord.constants_.insert("target_reached", 0x0400, 0x0400);
-    StatusWord.constants_.insert("internal_limit_active", 0x0800, 0x0800);
-    StatusWord.constants_.insert("set_point_acknowledge/speed_0/homing_attained/ip_mode_active", 0x1000, 0x1000);
-    StatusWord.constants_.insert("following_error/homing_error", 0x2000, 0x2000);
-    StatusWord.constants_.insert("manufacturer_statusbit", 0x4000, 0x4000);
-    StatusWord.constants_.insert("drive_referenced", 0x8000, 0x8000);
-    d_.insert(StatusWord);
-    
-    EDSClass ModesOfOperation("modes_of_operation", 0x6060, 0x0, 1, "wo");
-    ModesOfOperation.constants_.insert("homing_mode", 0xFF, 6);
-    ModesOfOperation.constants_.insert("profile_position_mode", 0xFF, 1);
-    ModesOfOperation.constants_.insert("profile_velocity_mode", 0xFF, 3);
-    ModesOfOperation.constants_.insert("torque_profile_mode", 0xFF, 4);
-    ModesOfOperation.constants_.insert("interpolated_position_mode", 0xFF, 7);
-    d_.insert(ModesOfOperation);
-
-    EDSClass ModesOfOperationDisplay("modes_of_operation_display", 0x6061, 0x0, 1, "ro");
-    ModesOfOperationDisplay.constants_.insert("homing_mode", 0xFF, 6);
-    ModesOfOperationDisplay.constants_.insert("profile_position_mode", 0xFF, 1);
-    ModesOfOperationDisplay.constants_.insert("profile_velocity_mode", 0xFF, 3);
-    ModesOfOperationDisplay.constants_.insert("torque_profile_mode", 0xFF, 4);
-    ModesOfOperationDisplay.constants_.insert("interpolated_position_mode", 0xFF, 7);
-    d_.insert(ModesOfOperationDisplay); 
-
-    EDSClass TorqueActualValue("torque_actual_value", 0x6077, 0x0, 2, "rw");
-    d_.insert(TorqueActualValue);
-
-    EDSClass PositionActualValue("position_actual_value", 0x6064, 0x0, 4, "rw");
-    d_.insert(PositionActualValue);
-    
-    /*bmtype bm6061 = bm6060;
-      d_.insert(EDSClass("modes_of_operation_display", "6061_0", 0x6061, 0x0, 1, "ro", bm6061)); */
-
-    /*
-    // device status indices:
-    d_.insert(EDSClass("position_actual_value","6064_0", 0x6064, 0x0, 4, "rw"));
-    d_.insert(EDSClass("torque_actual_value","6077_0", 0x6077, 0x0, 2, "rw"));
-
-    // interpolation_time_period: ip_time_units (0x60C2, 01h)
-    d_.insert(EDSClass("ip_time_units", "60C2_1", 0x60C2, 0x1, 1, "rw"));
-
-    // interpolation_time_period: ip_time_index (0x60C2, 02h)
-    d_.insert(EDSClass("ip_time_index", "60C2_2", 0x60C2, 0x2, 1, "rw"));
-    */
-  }
-
-  PDODict::PDODict() {
-    // rPDOs: 0x200+nodeID, 0x300+nodeID
-    // tPDOs: 0x180 0x280 0x380 0x480
-
-    // Schunk default rPDO 
-    std::vector<std::string> comp1;
-    comp1.push_back("controlword");
-    comp1.push_back("notused16"); // not sure what these two bytes are used for
-    comp1.push_back("interpolation_data_record:ip_data_position");
-    d_.insert(PDOClass("schunk_default_rPDO", 0x200, comp1));
-
-    // Schunk default tPDO 
-    std::vector<std::string> comp2;
-    comp2.push_back("statusword");
-    comp2.push_back("torque_actual_value");
-    comp2.push_back("position_actual_value");
-    d_.insert(PDOClass("schunk_default_tPDO", 0x180, comp2));
-
-    std::vector<std::string> comp3;
-    comp3.push_back("notused64");
-    d_.insert(PDOClass("schunk_debug_tPDO", 0x480, comp3));
-
-
-    // Schunk  tPDO for device ID 12:
-    /*
-    std::vector<std::string> comp3;
-    comp3.push_back("notused64");
-    d_.insert(PDOClass("schunk_4th_tPDO_12", 0x0c, 0x480 + 0x0c, comp3));
-
-    std::vector<std::string> comp4;
-    comp4.push_back("controlword");
-    comp4.push_back("notused16"); // not sure what these two bytes are used for
-    comp4.push_back("interpolation_data_record:ip_data_position");
-    d_.insert(PDOClass("schunk_default_rPDO_8", 0x08, 0x200 + 0x08, comp4));
-    
-    std::vector<std::string> comp5;
-    comp5.push_back("statusword");
-    comp5.push_back("torque_actual_value");
-    comp5.push_back("position_actual_value");
-    d_.insert(PDOClass("schunk_default_tPDO_8", 0x08, 0x180 + 0x08, comp5));
-
-    std::vector<std::string> comp6;
-    comp6.push_back("controlword");
-    comp6.push_back("notused16"); // not sure what these two bytes are used for
-    comp6.push_back("interpolation_data_record:ip_data_position");
-    d_.insert(PDOClass("schunk_default_rPDO_7", 0x07, 0x200 + 0x07, comp6));
-    
-    std::vector<std::string> comp7;
-    comp7.push_back("statusword");
-    comp7.push_back("torque_actual_value");
-    comp7.push_back("position_actual_value");
-    d_.insert(PDOClass("schunk_default_tPDO_7", 0x07, 0x180 + 0x07, comp7));
-    */
-  }
-
-  std::vector<std::string> PDODict::getComponents(std::string alias) {
-    typedef PDOClassSet::nth_index<0>::type PDOClassSet_by_alias;
-    PDOClassSet_by_alias::iterator it=d_.get<0>().find(alias);
-    return it->components_;
-  }
-
-  uint16_t PDODict::getCobID(std::string alias) {
-    typedef PDOClassSet::nth_index<0>::type PDOClassSet_by_alias;
-    PDOClassSet_by_alias::iterator it=d_.get<0>().find(alias);
-    return it->cobID_;
-  }
-
-  std::string PDODict::getAlias(uint16_t cobID) { // only used for incoming PDOs
-    uint16_t index;
-    std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
-    int i=0;
-    while (i<3 && indices[i+1] < cobID) i++;
-    index = indices[i];
-    typedef PDOClassSet::nth_index<1>::type PDOClassSet_by_cobID;
-    PDOClassSet_by_cobID::iterator it=d_.get<1>().find(index); 
-    return it->alias_;
-  }
-
-  // todo: remove!
-  uint16_t PDODict::getNodeID(std::string alias) {
-    typedef PDOClassSet::nth_index<0>::type PDOClassSet_by_alias;
-    PDOClassSet_by_alias::iterator it=d_.get<0>().find(alias);
-    uint16_t cobID = it->cobID_;
-    std::cout << "getNodeID: " << alias << "    " << cobID << std::endl;
-    std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
-    int i=0;
-    while (i<3 && indices[i+1] < cobID) i++;
-    uint16_t nodeID = cobID - indices[i];
-    return nodeID;
-    // return it->cobID_;
-  }
-
-  // todo: remove!
-  bool PDODict::cobIDexists(uint16_t cobID) {
-    /*for (auto it=PDOClassSet_by_cobID.begin(); it!=PDOClassSet_by_cobID.end(); it++) {
-      std::cout << "hiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii" << std::endl;
-      }*/
-
-    typedef PDOClassSet::nth_index<1>::type PDOClassSet_by_cobID;
-    PDOClassSet_by_cobID::iterator it=d_.get<1>().find(cobID);
-    return it != d_.get<1>().end();
-  }
-
-  uint32_t EDSDict::getConst(std::string alias, std::string constname) {
-    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
-    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
-    Constants cc = it->constants_;
-    return cc.getValue(constname);
-  }
-
-  uint32_t EDSDict::getMask(std::string alias, std::string constname) {
-    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
-    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
-    Constants cc = it->constants_;
-    return cc.getMask(constname);
-  }
-
-  uint8_t EDSDict::getLen(std::string alias) {
-    bmtype bm;
-    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
-    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
-    return it->length_;
-  }
-
-  uint16_t EDSDict::getIndex(std::string alias) {
-    bmtype bm;
-    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
-    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
-    return it->index_;
-  }
-
-  uint8_t EDSDict::getSubindex(std::string alias) {
-    bmtype bm;
-    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
-    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
-    return it->subindex_;
-  }
-
-  std::string EDSDict::getAlias(uint16_t index, uint8_t subindex) {
-    EDSClassSet::iterator it = d_.find(boost::make_tuple(index, subindex));
-    return it->alias_;
-  }
 
   // ------------- wrapper functions for sending SDO, PDO, and NMT messages: --
 
@@ -535,3 +380,5 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
   }
 }
+
+// todo: PDOs
