@@ -118,7 +118,7 @@ namespace canopen {
     return ok; // todo
   }
 
-  void sendPos(uint16_t deviceID, uint32_t pos) {  // todo: more flexible approach with device ID
+  void sendPos(uint16_t deviceID, uint32_t pos) {  
     std::vector<uint32_t> v;
     v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
     v.push_back(0);
@@ -126,4 +126,5 @@ namespace canopen {
     // Message("schunk_default_rPDO_12", v).writeCAN();  // works for PRH module
     Message(deviceID, "schunk_default_rPDO", v).writeCAN();
   }
+
 }

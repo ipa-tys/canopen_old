@@ -15,7 +15,7 @@ namespace canopen {
   // todo: make this map thread-safe:
   std::map<std::string, Message* > pendingSDOReplies;
   std::queue<Message> incomingPDOs;
-  std::queue<Message> outgoingPDOs;
+
 
   std::string Message::createMsgHash(TPCANMsg m) { 
     std::string ss = std::to_string(nodeID_) + "_" +
