@@ -7,7 +7,7 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/composite_key.hpp>
-#include <fcntl.h>    // O_RDWR
+#include <fcntl.h>    // for O_RDWR
 #include <libpcan.h>
 #include <vector>
 #include <stdint.h>
@@ -57,25 +57,16 @@ namespace canopen {
   class EDSClass {
   public:
     std::string alias_;
-    std::string index_subindex_; // todo: remove!
     uint16_t index_;
     uint8_t subindex_;
     uint8_t length_;
     std::string attr_;
     std::vector<uint64_t> masks_;  // todo:
-
-    //  private:
     Constants constants_;
-    // std::vector<bmtype> constants_; // todo!
 
-  EDSClass(std::string alias, std::string index_subindex, uint16_t index, uint8_t subindex,
-	   uint8_t length, std::string attr, Constants constants):
-    alias_(alias), index_subindex_(index_subindex), index_(index), subindex_(subindex),
-      length_(length), attr_(attr), constants_(constants) {}
-
-  EDSClass(std::string alias, std::string index_subindex, uint16_t index, uint8_t subindex,
+    EDSClass(std::string alias, uint16_t index, uint8_t subindex,
 	   uint8_t length, std::string attr):
-    alias_(alias), index_subindex_(index_subindex), index_(index), subindex_(subindex),
+    alias_(alias), index_(index), subindex_(subindex),
       length_(length), attr_(attr) {}
   };
 
@@ -92,13 +83,11 @@ namespace canopen {
     bmi::indexed_by<
     bmi::ordered_unique<index_subindex_key>,
     bmi::ordered_unique<bmi::tag<byAlias>, bmi::member<EDSClass, std::string, &EDSClass::alias_> >
-    
-    // bmi::ordered_unique<bmi::tag<byIndex>, bmi::member<EDSClass, std::string, &EDSClass::index_subindex_> >
     >
     > EDSClassSet;
 
 
-  struct PDOClass {  // todo:
+  struct PDOClass { 
     std::string alias_;
     uint16_t cobID_;
     std::vector<std::string> components_; // entries into EDSDict

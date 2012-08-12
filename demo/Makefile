@@ -1,10 +1,16 @@
-all: single_device multiple_devices
+all: single_device multiple_devices minimal
 
 single_device: single_device.o
 	g++ single_device.o -o single_device -lpthread -lcanopen -lpcan
 
 single_device.o: single_device.cpp
 	g++ -c single_device.cpp -std=c++0x
+
+minimal: minimal.o
+	g++ minimal.o -o minimal -lpthread -lcanopen -lpcan
+
+minimal.o: minimal.cpp
+	g++ -c minimal.cpp -std=c++0x
 
 multiple_devices: multiple_devices.o
 	g++ multiple_devices.o -o multiple_devices -lpthread -lcanopen -lpcan
@@ -25,5 +31,5 @@ test_min2.o: test_min2.cpp
 	g++ -c test_min2.cpp -std=c++0x
 
 clean:
-	\rm -f *.o *~ single_device multiple_devices
+	\rm -f *.o *~ single_device multiple_devices minimal
 

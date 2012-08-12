@@ -280,13 +280,13 @@ namespace canopen {
 
 
   EDSDict::EDSDict() {
-    d_.insert(EDSClass("notused16", "FFFF_FF", 0xFFFF, 0xFF, 2, "rw"));   // dummy entry for unused 16 bits in a PDO message
-    d_.insert(EDSClass("notused32", "FFFF_FE", 0xFFFF, 0xFE, 4, "rw"));   // dummy entry for unused 32 bit in a PDO message
-    d_.insert(EDSClass("notused64", "FFFF_FD", 0xFFFF, 0xFD, 8, "rw"));   // dummy entry for unused 64 bit in a PDO message
+    d_.insert(EDSClass("notused16", 0xFFFF, 0xFF, 2, "rw"));   // dummy entry for unused 16 bits in a PDO message
+    d_.insert(EDSClass("notused32", 0xFFFF, 0xFE, 4, "rw"));   // dummy entry for unused 32 bit in a PDO message
+    d_.insert(EDSClass("notused64", 0xFFFF, 0xFD, 8, "rw"));   // dummy entry for unused 64 bit in a PDO message
 
-    d_.insert(EDSClass("interpolation_data_record:ip_data_position", "60C1_1", 
+    d_.insert(EDSClass("interpolation_data_record:ip_data_position",  
 		       0x60C1, 0x1, 4, "rw")); // interpolation_data_record: ip_data_position
-    d_.insert(EDSClass("sync_timeout_factor", "200e_0", 
+    d_.insert(EDSClass("sync_timeout_factor",  
 		       0x200e, 0x0, 1, "rw"));   // sync_timeout_factor
     // NMT
     //bmtype bm0;
@@ -294,7 +294,7 @@ namespace canopen {
     //bm0.insert(bmtype::value_type("start_remote_node",0x01));
     
     // d_.insert(EDSClass("NMT","0", 0x0, 0x0, 1, "wo", bm0));
-    EDSClass NMT("NMT","0", 0x0, 0x0, 1, "wo");
+    EDSClass NMT("NMT", 0x0, 0x0, 1, "wo");
     NMT.constants_.insert("stop_remote_node", 0xFF, 0x02);
     NMT.constants_.insert("start_remote_node", 0xFF, 0x01);
     NMT.constants_.insert("reset_application", 0xFF, 0x81);
@@ -303,7 +303,7 @@ namespace canopen {
     //d_.insert(NMT); 
     // d_.insert(EDSClass("NMT","0", 0x0, 0x0, 1, "wo", bm0));
 
-    EDSClass ControlWord("controlword", "6040_0", 0x6040, 0x0, 2, "rw");
+    EDSClass ControlWord("controlword", 0x6040, 0x0, 2, "rw");
     ControlWord.constants_.insert("disable_voltage", 0xFFFF, 0x1);
     ControlWord.constants_.insert("sm_shutdown", 0xFFFF, 0x6);
     ControlWord.constants_.insert("sm_switch_on", 0xFFFF, 0x7);
@@ -313,7 +313,7 @@ namespace canopen {
     ControlWord.constants_.insert("reset_fault_1", 0xFFFF, 0x80);
     d_.insert(ControlWord);
 
-    EDSClass StatusWord("statusword", "6041_0", 0x6041, 0x0, 2, "ro");
+    EDSClass StatusWord("statusword", 0x6041, 0x0, 2, "ro");
     StatusWord.constants_.insert("not_ready_to_switch_on", 0x004F, 0);
     StatusWord.constants_.insert("switch_on_disabled", 0x004F, 0x0040);
     StatusWord.constants_.insert("ready_to_switch_on", 0x006F, 0x0021);
@@ -334,7 +334,7 @@ namespace canopen {
     StatusWord.constants_.insert("drive_referenced", 0x8000, 0x8000);
     d_.insert(StatusWord);
     
-    EDSClass ModesOfOperation("modes_of_operation", "6060_0", 0x6060, 0x0, 1, "wo");
+    EDSClass ModesOfOperation("modes_of_operation", 0x6060, 0x0, 1, "wo");
     ModesOfOperation.constants_.insert("homing_mode", 0xFF, 6);
     ModesOfOperation.constants_.insert("profile_position_mode", 0xFF, 1);
     ModesOfOperation.constants_.insert("profile_velocity_mode", 0xFF, 3);
@@ -342,7 +342,7 @@ namespace canopen {
     ModesOfOperation.constants_.insert("interpolated_position_mode", 0xFF, 7);
     d_.insert(ModesOfOperation);
 
-    EDSClass ModesOfOperationDisplay("modes_of_operation_display", "6061_0", 0x6061, 0x0, 1, "ro");
+    EDSClass ModesOfOperationDisplay("modes_of_operation_display", 0x6061, 0x0, 1, "ro");
     ModesOfOperationDisplay.constants_.insert("homing_mode", 0xFF, 6);
     ModesOfOperationDisplay.constants_.insert("profile_position_mode", 0xFF, 1);
     ModesOfOperationDisplay.constants_.insert("profile_velocity_mode", 0xFF, 3);
@@ -350,10 +350,10 @@ namespace canopen {
     ModesOfOperationDisplay.constants_.insert("interpolated_position_mode", 0xFF, 7);
     d_.insert(ModesOfOperationDisplay); 
 
-    EDSClass TorqueActualValue("torque_actual_value", "6077_0", 0x6077, 0x0, 2, "rw");
+    EDSClass TorqueActualValue("torque_actual_value", 0x6077, 0x0, 2, "rw");
     d_.insert(TorqueActualValue);
 
-    EDSClass PositionActualValue("position_actual_value", "6064_0", 0x6064, 0x0, 4, "rw");
+    EDSClass PositionActualValue("position_actual_value", 0x6064, 0x0, 4, "rw");
     d_.insert(PositionActualValue);
     
     /*bmtype bm6061 = bm6060;
