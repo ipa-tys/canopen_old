@@ -11,12 +11,15 @@
 
 namespace canopen {
   // -------------- namespace-global variables:
+  bool using_master_thread = false;
+  std::queue<Message> outgoingMsgQueue; // only used if using_master_thread==true
 
-  bool queue_incoming_PDOs = true;
   HANDLE h;
   EDSDict eds;
   PDODict pdo;
   std::map<std::string, Message* > pendingSDOReplies; // todo: make thread-safe
+
+  bool queue_incoming_PDOs = true; // todo: implement its use; only queue PDOs when true
   std::queue<Message> incomingPDOs; // todo: make thread_safe
 
   // -------------- EDSDict member functions:
@@ -313,11 +316,6 @@ namespace canopen {
 	uint32_t v = values_[0];
 	for (int i=0; i<len; i++) msg.DATA[4+i] = static_cast<uint8_t>( (v >> (8*i)) & 0xFF );
       } 
-
-      // printf("%02x %d %d\n", msg.ID, msg.MSGTYPE, msg.LEN);
-      // for (int i=0; i<8; i++) printf("%02x ", msg.DATA[i]);
-      // printf("\n");
-
 
       // put on multiset
       std::string ss = createMsgHash(msg);

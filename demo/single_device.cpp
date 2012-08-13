@@ -3,8 +3,6 @@
 // first, the drive is referenced (homing), then some example
 // motions are performed in interpolated_position_mode
 
-#include <thread>
-#include <chrono>
 #include <canopen_highlevel.h>
 
 int main(int argc, char *argv[]) {
@@ -25,13 +23,8 @@ int main(int argc, char *argv[]) {
   canopen::initListenerThread();    
 
   // put NMT and 402 state machines for device  to operational:
-  std::cout << "hi1" << std::endl;
   canopen::faultReset(deviceID);
-  std::cout << "hi2" << std::endl;
-
   canopen::initNMT();
-  std::cout << "hi3" << std::endl;
-
   if (!canopen::initDevice(deviceID)) { 
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
