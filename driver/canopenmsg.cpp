@@ -57,14 +57,17 @@ namespace canopen {
       std::istringstream x(ll); 
       std::string alias;
       uint16_t index;
-      uint8_t subindex;
-      uint8_t length;
+      uint16_t subindex; // had to use 16 instead of 8 here for >> to work
+      uint16_t length; // had to use 16 instead of 8 here for >> to work
       std::string attr;
       x >> alias;
       x >> std::hex >> index;
       x >> std::hex >> subindex;
       x >> length;
       x >> attr;
+      // std::cout << "index: " << index << std::endl;
+      // std::cout << "LENGTH: " << length << std::endl;
+      // std::cout << "ATTR: " << attr << std::endl;
       EDSClass* xx = new EDSClass(alias, index, subindex, length, attr);
       
       // now insert constants:
@@ -287,6 +290,7 @@ namespace canopen {
       msg.ID = 0x600 + nodeID_;
       msg.MSGTYPE = 0x00;
       uint8_t len = eds.getLen(alias_);
+      std::cout << "LEN: " << static_cast<int>(len) << std::endl;
       if (writeMode == true) {
 	msg.LEN = 4 + len; // 0x2F(or 0x2b or 0x23) / index / subindex / actual data
 	if (len==1) {
@@ -301,17 +305,19 @@ namespace canopen {
 	msg.DATA[0] = 0x40;
       }
       uint16_t index = eds.getIndex(alias_);
+    
       msg.DATA[1] = static_cast<uint8_t>(index & 0xFF);
       msg.DATA[2] = static_cast<uint8_t>((index >> 8) & 0xFF);
       msg.DATA[3] = eds.getSubindex(alias_);
       if (writeMode == true) {
 	uint32_t v = values_[0];
 	for (int i=0; i<len; i++) msg.DATA[4+i] = static_cast<uint8_t>( (v >> (8*i)) & 0xFF );
-      }
+      } 
 
-      printf("%02x %d %d\n", msg.ID, msg.MSGTYPE, msg.LEN);
-      for (int i=0; i<8; i++) printf("%02x ", msg.DATA[i]);
-      printf("\n");
+      // printf("%02x %d %d\n", msg.ID, msg.MSGTYPE, msg.LEN);
+      // for (int i=0; i<8; i++) printf("%02x ", msg.DATA[i]);
+      // printf("\n");
+
 
       // put on multiset
       std::string ss = createMsgHash(msg);

@@ -20,18 +20,23 @@ int main(int argc, char *argv[]) {
     std::cout << "Cannot open CAN device; aborting." << std::endl;
     return -1;
   } 
-  
+ 
   // initialize listener thread:
   canopen::initListenerThread();    
-    
+
   // put NMT and 402 state machines for device  to operational:
+  std::cout << "hi1" << std::endl;
   canopen::faultReset(deviceID);
+  std::cout << "hi2" << std::endl;
+
   canopen::initNMT();
+  std::cout << "hi3" << std::endl;
+
   if (!canopen::initDevice(deviceID)) { 
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
   } 
-  
+ 
   // performing homing of device:
   if (!canopen::homing(deviceID)) {
     std::cout << "Homing was not successful; aborting." << std::endl;

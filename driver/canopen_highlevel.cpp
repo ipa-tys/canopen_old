@@ -26,7 +26,9 @@ namespace canopen {
   }
 
   void faultReset(uint16_t deviceID) {
-    sendSDO(deviceID, "controlword", "fault_reset");
+    // sendSDO(deviceID, "controlword", "fault_reset");
+    sendSDO(deviceID, "controlword", "reset_fault_0");
+    sendSDO(deviceID, "controlword", "reset_fault_1");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
 
@@ -48,7 +50,9 @@ namespace canopen {
     while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
       std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
+      }
+
+
     // sendSDO(deviceID, "controlword", "sm_enable_operation");
     // Message* SDOreply = sendSDO(deviceID, "statusword", "", false);
     // return "true" if device is indeed operational ("false" otherwise):
