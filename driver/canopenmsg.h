@@ -45,7 +45,13 @@ namespace canopen {
     Message(TPCANRdMsg m); // constructor for messages coming in from bus (TPCANRdMsg)
     Message(uint8_t nodeID, std::string alias, uint32_t value=0); // user-constructed non-PDO message
     Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values); // user-constructed PDO message
-    void writeCAN(bool writeMode=true);
+    
+
+    void writeCAN(bool writeMode=true, bool directlyToCANBus=false); 
+    // if toOutgoingMsgQueue==true, messages are not written directly on the
+    // CAN bus, but instead are put into the queue "outgoingMsgQueue" which
+    // is a global variable within the "canopen" namespace
+
     static Message* readCAN(bool blocking=true);
     Message* waitForSDOAnswer();
     void debugPrint();

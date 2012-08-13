@@ -249,82 +249,87 @@ namespace canopen {
     return (value & mask) == constValue;
   }
 
-  void Message::writeCAN(bool writeMode) {
-    TPCANMsg msg;
-    for (int i=0; i<8; i++) msg.DATA[i]=0;
+  void Message::writeCAN(bool writeMode, bool directlyToCanBus) {
+    if (using_master_thread && !directlyToCanBus && alias_ != "Sync") {
+      // don't write to CAN bus, just put in queue
+      // note: SYNC messages are never queued
+      outgoingMsgQueue.push(*this);
+    } else {
+      TPCANMsg msg;
+      for (int i=0; i<8; i++) msg.DATA[i]=0;
 
-    if (values_.size() > 1) {  // PDO
-      std::vector<std::string> components = pdo.getComponents(alias_);
-      std::vector<uint32_t> lengths;
-      for (auto comp:components) lengths.push_back(eds.getLen(comp));
-      int pos = 0;
-      for (int i=0; i<components.size(); i++) {
-	for (int j=0; j<lengths[i]; j++) {
-	  msg.DATA[pos] = static_cast<uint8_t>(values_[i] >> (j*8) & 0xFF);
-	  pos++;
+      if (values_.size() > 1) {  // PDO
+	std::vector<std::string> components = pdo.getComponents(alias_);
+	std::vector<uint32_t> lengths;
+	for (auto comp:components) lengths.push_back(eds.getLen(comp));
+	int pos = 0;
+	for (int i=0; i<components.size(); i++) {
+	  for (int j=0; j<lengths[i]; j++) {
+	    msg.DATA[pos] = static_cast<uint8_t>(values_[i] >> (j*8) & 0xFF);
+	    pos++;
+	  }
 	}
-      }
-      msg.ID = pdo.getCobID(alias_) + nodeID_;
-      msg.MSGTYPE = 0x00;
-      msg.LEN = 8;
-      CAN_Write(h, &msg);
+	msg.ID = pdo.getCobID(alias_) + nodeID_;
+	msg.MSGTYPE = 0x00;
+	msg.LEN = 8;
+	CAN_Write(h, &msg);
     
-      printf("%02x %d %d\n", msg.ID, msg.MSGTYPE, msg.LEN);
-      for (int i=0; i<8; i++) printf("%02x ", msg.DATA[i]);
-      printf("\n");
-    } else if (alias_ == "NMT") {
-      std::cout << "hi, NMT" << std::endl;
-      msg.ID = 0;
-      msg.MSGTYPE = 0x00;  // standard message
-      msg.LEN = 2;
-      msg.DATA[0] = values_[0];
-      msg.DATA[1] = nodeID_;
-      CAN_Write(h, &msg);
+	printf("%02x %d %d\n", msg.ID, msg.MSGTYPE, msg.LEN);
+	for (int i=0; i<8; i++) printf("%02x ", msg.DATA[i]);
+	printf("\n");
+      } else if (alias_ == "NMT") {
+	std::cout << "hi, NMT" << std::endl;
+	msg.ID = 0;
+	msg.MSGTYPE = 0x00;  // standard message
+	msg.LEN = 2;
+	msg.DATA[0] = values_[0];
+	msg.DATA[1] = nodeID_;
+	CAN_Write(h, &msg);
       
-    } else if (alias_ == "Sync") {
-      std::cout << "hi, sync" << std::endl;
-      msg.ID = 0x80;
-      msg.MSGTYPE = 0x00;
-      msg.LEN = 0;
-      CAN_Write(h, &msg);
+      } else if (alias_ == "Sync") {
+	msg.ID = 0x80;
+	msg.MSGTYPE = 0x00;
+	msg.LEN = 0;
+	CAN_Write(h, &msg);
     
-    } else { // SDO
-      std::cout << "hi, SDO" << std::endl;
-      msg.ID = 0x600 + nodeID_;
-      msg.MSGTYPE = 0x00;
-      uint8_t len = eds.getLen(alias_);
-      std::cout << "LEN: " << static_cast<int>(len) << std::endl;
-      if (writeMode == true) {
-	msg.LEN = 4 + len; // 0x2F(or 0x2b or 0x23) / index / subindex / actual data
-	if (len==1) {
-	  msg.DATA[0] = 0x2F;
-	} else if (len==2) {
-	  msg.DATA[0] = 0x2B;
-	} else { // len==4
-	  msg.DATA[0] = 0x23;
+      } else { // SDO
+	std::cout << "hi, SDO" << std::endl;
+	msg.ID = 0x600 + nodeID_;
+	msg.MSGTYPE = 0x00;
+	uint8_t len = eds.getLen(alias_);
+	std::cout << "LEN: " << static_cast<int>(len) << std::endl;
+	if (writeMode == true) {
+	  msg.LEN = 4 + len; // 0x2F(or 0x2b or 0x23) / index / subindex / actual data
+	  if (len==1) {
+	    msg.DATA[0] = 0x2F;
+	  } else if (len==2) {
+	    msg.DATA[0] = 0x2B;
+	  } else { // len==4
+	    msg.DATA[0] = 0x23;
+	  }
+	} else { // writeMode==false
+	  msg.LEN = 4; // only 0x40 / index / subindex
+	  msg.DATA[0] = 0x40;
 	}
-      } else { // writeMode==false
-	msg.LEN = 4; // only 0x40 / index / subindex
-	msg.DATA[0] = 0x40;
-      }
-      uint16_t index = eds.getIndex(alias_);
+	uint16_t index = eds.getIndex(alias_);
     
-      msg.DATA[1] = static_cast<uint8_t>(index & 0xFF);
-      msg.DATA[2] = static_cast<uint8_t>((index >> 8) & 0xFF);
-      msg.DATA[3] = eds.getSubindex(alias_);
-      if (writeMode == true) {
-	uint32_t v = values_[0];
-	for (int i=0; i<len; i++) msg.DATA[4+i] = static_cast<uint8_t>( (v >> (8*i)) & 0xFF );
-      } 
+	msg.DATA[1] = static_cast<uint8_t>(index & 0xFF);
+	msg.DATA[2] = static_cast<uint8_t>((index >> 8) & 0xFF);
+	msg.DATA[3] = eds.getSubindex(alias_);
+	if (writeMode == true) {
+	  uint32_t v = values_[0];
+	  for (int i=0; i<len; i++) msg.DATA[4+i] = static_cast<uint8_t>( (v >> (8*i)) & 0xFF );
+	} 
 
-      // put on multiset
-      std::string ss = createMsgHash(msg);
-      pendingSDOReplies.insert(std::make_pair(ss, nullptr));
-      std::cout << "Message hash: " << ss << std::endl;
+	// put on multiset
+	std::string ss = createMsgHash(msg);
+	pendingSDOReplies.insert(std::make_pair(ss, nullptr));
+	std::cout << "Message hash: " << ss << std::endl;
 
-      CAN_Write(h, &msg);
-    }  // end SDO
+	CAN_Write(h, &msg);
+      }  // end SDO
 
+    }
   }
 
   void debug_show_pendingSDOReplies() {
