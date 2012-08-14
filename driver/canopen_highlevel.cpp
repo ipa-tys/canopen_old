@@ -1,6 +1,7 @@
 #include "canopen_highlevel.h"
 
 namespace canopen {
+  // todo: canopen::waitForConstant (like checkForConstant, but with loop)
 
   // ---------------------- general communication commands: -------------------
 
@@ -50,7 +51,7 @@ namespace canopen {
     while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
       std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      }
+    }
 
 
     // sendSDO(deviceID, "controlword", "sm_enable_operation");
@@ -107,9 +108,9 @@ namespace canopen {
   bool enableBreak(uint16_t deviceID) {
     sendSDO(deviceID, "controlword", "sm_switch_on");
     /* while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
-      std::cout << "waiting.............." << std::endl;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      }*/
+       std::cout << "waiting.............." << std::endl;
+       std::this_thread::sleep_for(std::chrono::milliseconds(10));
+       }*/
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
     return true; // todo timeout
   }

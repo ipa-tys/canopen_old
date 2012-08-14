@@ -13,17 +13,15 @@ namespace canopen {
   bool openConnection(std::string devName); // initialize device driver
   void closeConnection();
   void initListenerThread(); // initialize listener thread
-  // bool initAll(); // todo??
   void faultReset(uint16_t deviceID);
   void initNMT();
   bool initDevice(uint16_t deviceID); // init NMT and 402 state machines
   bool shutdownDevice(uint16_t deviceID); // init NMT and 402 state machines
-  void sendSync(uint32_t sleepTime_msec); // sends a SYNC (must be done in regular time intervals)
+  void sendSync(uint32_t sleepTime_msec=0); // sends a SYNC (must be done in regular time intervals)
 
   // motor functions:
-
-  // perform device homing; returns "true" if "drive_referenced" appears in statusword
-  // after homing; return "false" otherwise
+  // homing: perform device homing; returns "true" if "drive_referenced" appears in statusword
+  // after homing; return "false" otherwise:
   bool homing(uint16_t deviceID); 
 
   // put device into specific mode of operation
@@ -39,9 +37,6 @@ namespace canopen {
   bool releaseBreak(uint16_t deviceID); 
   bool enableBreak(uint16_t deviceID);
 
-  // void ipMode(uint16_t deviceID); // put device into IP mode, ready to receive PDOs
   void sendPos(uint16_t deviceID, uint32_t pos); // send position command as PDO (for IP mode)
-  // void sendPos7(uint32_t pos); // send position command as PDO (for IP mode)
-  // void sendPos8(uint32_t pos); // send position command as PDO (for IP mode)
 }
 #endif

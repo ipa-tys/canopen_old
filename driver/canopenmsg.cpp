@@ -1,12 +1,3 @@
-#include <iostream>
-#include <string>
-#include <libpcan.h>
-#include <set>
-#include <map>
-#include <queue>
-#include <regex>
-#include <pwd.h>
-#include <fstream>
 #include "canopenmsg.h"
 
 namespace canopen {
@@ -391,3 +382,4 @@ namespace canopen {
 }
 
 // todo: PDOs
+// todo: sleep_for in writeCAN instead of in functions

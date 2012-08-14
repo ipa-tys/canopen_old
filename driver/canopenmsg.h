@@ -13,10 +13,25 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <thread>
+
+#include <iostream>
+#include <string>
+#include <libpcan.h>
+#include <set>
+#include <map>
+#include <queue>
+#include <regex>
+#include <pwd.h>
+#include <fstream>
+
+
 #include "canopen_internal.h"
 
 
 namespace canopen {
+
+  extern bool using_master_thread;
+ 
 
   class EDSDict {
   public:
@@ -78,5 +93,10 @@ namespace canopen {
 
   // only for testing purposes, print map of sent SDOs waiting for reply:
   void debug_show_pendingSDOReplies(); 
+
+  extern std::queue<Message> outgoingMsgQueue; // todo: only for debugging
 }
+
+
+
 #endif
