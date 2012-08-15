@@ -68,6 +68,13 @@ int main() {
   canopen::using_master_thread = true;
   canopen::initChainMap("/home/tys/git/other/canopen/driver/robot1.csv");
 
+  /* for (auto pp : canopen::pdo.d_) {
+    std::cout << pp.alias_ << std::endl;
+    for (auto it : pp.components_)
+  }
+
+  return 0; */
+
   // initialize CAN device driver:
   if (!canopen::openConnection("/dev/pcan32")) {
     std::cout << "Cannot open CAN device; aborting." << std::endl;
@@ -76,7 +83,7 @@ int main() {
 
   // initialize listener thread:
   canopen::initListenerThread();
-
+  canopen::initIncomingPDOProcessorThread();
   canopen::initMasterThread();
 
 

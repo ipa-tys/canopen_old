@@ -4,6 +4,25 @@ namespace canopen {
 
   // ---------- Device: everything inline so far
 
+  void Device::updateStatusWithIncomingPDO(Message m) {
+    // step 1: get components of message:
+    std::vector<std::string> components = pdo.getComponents(m.alias_); // todo: implement Message::getComponents()
+    std::cout << "DEVICE: " << CANid_ << "  MESSAGE " << m.alias_ << "  " << components.size() << std::endl;
+    for (auto comp : components)
+      std::cout << comp << "   ";
+    std::cout << std::endl;
+    // e.g. if m contains position, update position...
+    // so far, only position_actual_value is implemented, todo: statusword etc.
+
+    auto it = std::find(components.begin(), components.end(), "position_actual_value");
+    if (it != components.end()) { 
+      size_t ind = it - components.begin();
+      std::cout << "FOUND POS_ACT_VAL at index " << ind << std::endl;
+      std::cout << "UPDATING POS to: " << m.values_[ind] << std::endl;
+      current_position_ = m.values_[ind];
+    }
+  }
+
   // ---------- Chain:
 
   Chain::Chain(std::string chainName, 	std::vector<std::string> deviceNames,
@@ -53,5 +72,13 @@ namespace canopen {
     std::cout << "POS: " << requestedPositions[0] << std::endl;
     return requestedPositions;
   }
+
+  void Chain::updateStatusWithIncomingPDO(Message m) { // todo save device lookup by using a map
+    std::vector<uint16_t> deviceIDs = getDeviceIDs();
+    int i=0;
+    while (deviceIDs[i] != m.nodeID_) i++;
+    devices_[i].updateStatusWithIncomingPDO(m);
+  }
+
 
 }

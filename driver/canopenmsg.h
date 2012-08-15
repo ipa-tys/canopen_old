@@ -52,7 +52,7 @@ namespace canopen {
     std::vector<std::string> getComponents(std::string alias);
     uint16_t getCobID(std::string alias); // todo: still needed?
     std::string getAlias(uint16_t cobID);
-  private:
+    // private:
     PDOClassSet d_;
   };
 
@@ -62,8 +62,8 @@ namespace canopen {
     Message(uint8_t nodeID, std::string alias, uint32_t value=0); // user-constructed non-PDO message
     Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values); // user-constructed PDO message
     
+    // todo: getValues() etc.
 
-    // void writeCAN(bool writeMode=true, bool directlyToCANBus=false); 
     void writeCAN(bool directlyToCANBus=false); 
     // if toOutgoingMsgQueue==true, messages are not written directly on the
     // CAN bus, but instead are put into the queue "outgoingMsgQueue" which
@@ -75,7 +75,7 @@ namespace canopen {
     void debugPrintFlags();
     bool checkForConstant(std::string constName); // only for SDOs so far
     std::vector<std::string> parseFlags();
-  private:
+    // private:
     uint8_t nodeID_; 
     std::string alias_; // entry into EDSDict, or PDODict, depending on message
     std::vector<uint32_t> values_;
@@ -97,6 +97,7 @@ namespace canopen {
   void debug_show_pendingSDOReplies(); 
 
   extern std::queue<Message> outgoingMsgQueue; // todo: only for debugging
+  extern std::queue<Message> incomingPDOs;
 }
 
 

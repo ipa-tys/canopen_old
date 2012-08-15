@@ -7,6 +7,7 @@ namespace canopen {
 
   void initChainMap(std::string robotDescFilename);
   void initMasterThread();
+  void initIncomingPDOProcessorThread();
 
   void homingCallback(std::string chainName);
   void initCallback(std::string chainName);

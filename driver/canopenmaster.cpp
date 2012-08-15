@@ -112,21 +112,51 @@ namespace canopen {
   }
 
 
-  void initMasterThread() { // todo: chain descriptions as argument
-    // using_master_thread = true;
+  void initMasterThread() {
+    using_master_thread = true;
     std::thread master_thread(masterFunc);
     master_thread.detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
+
+
+  void incomingPDOProcessorFunc() {
+    std::map<uint16_t, std::string> id2chain;
+    for (auto chain : chainMap)
+      for (auto device : chain.second->devices_)
+	id2chain[device.CANid_] = chain.second->alias_;
+
+    std::cout << "MAP: " << std::endl;
+    for (auto it : id2chain)
+      std::cout << it.first << " ---> " << it.second << std::endl;
+    
+    while (true) {
+      if (incomingPDOs.size()>1) { // todo: change to ">0" as soon as queue is thread-safe
+	Message m = incomingPDOs.front();
+	incomingPDOs.pop();
+	// std::cout << "Dispatch PDO to: " << id2chain[m.nodeID_] << std::endl;
+	chainMap[ id2chain[m.nodeID_] ]->updateStatusWithIncomingPDO(m);
+	// fetching can be arbitrarily fast:
+	std::this_thread::sleep_for(std::chrono::milliseconds(5)); 
+      }
+    }
+
+  }
+
+
+  void initIncomingPDOProcessorThread() {
+    std::thread incomingPDOProcessor_thread(incomingPDOProcessorFunc);
+    incomingPDOProcessor_thread.detach();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+
+
+
 }
 
 
 
-void initNonPDOSenderThread() {
-
-  // todo: send nonPDOs from here
-
-}
 
   
 // std::queue<std::vector<uint32_t> > outgoingPosQueue;
