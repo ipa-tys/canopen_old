@@ -7,7 +7,7 @@
 #include "canopenmaster.h"
 
 namespace canopen {
-  std::chrono::milliseconds controllerCycleDuration_msec(100);
+  std::chrono::milliseconds controllerCycleDuration_msec(10);
   std::map<std::string, Chain*> chainMap;
 
   void homingCallback(std::string chainName) { 
@@ -16,6 +16,10 @@ namespace canopen {
   
   void initCallback(std::string chainName) { 
     chainMap[chainName]->chainInit();
+  }
+
+  void setPosCallback(std::string chainName, std::vector<int> positions) {
+    chainMap[chainName]->setPos(positions);
   }
 
   void initChainMap(std::string robotDescFilename) {
@@ -59,18 +63,25 @@ namespace canopen {
   }
 
   void masterFunc() {
-    // std::vector<std::thread> SDOthreadPool;
-    // SDO calls block until return or timeout, hence the thread pool
-    // todo: currently, SDO sending is directly to bus
     
     // send out to CAN bus at specified rate:
     auto tic = std::chrono::high_resolution_clock::now();
+    bool any_SendPosActive;
     while (true) {
+      any_SendPosActive = false;
+      for (int i=0; i<2; i++) {
+	sendSync();
+	std::this_thread::sleep_for(controllerCycleDuration_msec);
+      }
+      tic = std::chrono::high_resolution_clock::now();
       // send PDOs to CAN bus (if chain has sendPosActive_==true):
       for (auto chain : chainMap) {
+	std::cout << "CHAIN: " << chain.second->alias_ << std::endl;
+	std::vector<int> rp = chain.second->getRequestedPos();
+	std::cout << "CHAIN REQ POS: " << rp[0] << std::endl;
 	if (chain.second->sendPosActive_) {
-	  std::cout << chain.first << " send." << std::endl; // todo: only for testing
-	  // chainMap[chain.first].sendPos();
+	  any_SendPosActive = true;
+	  chain.second->sendPos();
 	}
 	else // todo: only for debug, remove later
 	  std::cout << chain.first << " NOSEND!" << std::endl;
@@ -79,14 +90,17 @@ namespace canopen {
       std::cout << "master tic toc" << std::endl;
       std::cout << "master outgoing queue size: " << outgoingMsgQueue.size() << std::endl;
       
-      // send sync: (always or only if specific condition is met?)
-      // sendSync();
+      // send sync:
+      if (any_SendPosActive) {
+	std::cout << "SYNC ACTIVE!" << std::endl;
+	sendSync();
+      }
 
       while (std::chrono::high_resolution_clock::now() < tic + controllerCycleDuration_msec) {
 	// fetch a message from the outgoingMsgQueue and send to CAN bus:
 	// todo: move to thread pool; just sleep here!
 	if (outgoingMsgQueue.size() > 0) {
-	  outgoingMsgQueue.front().writeCAN(false, true); // todo: remove writeMode!
+	  outgoingMsgQueue.front().writeCAN(true); 
 	  outgoingMsgQueue.pop();
 	}
 	std::this_thread::sleep_for(std::chrono::microseconds(10)); 

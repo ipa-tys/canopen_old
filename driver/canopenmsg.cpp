@@ -91,11 +91,18 @@ namespace canopen {
   }
 
   uint8_t EDSDict::getLen(std::string alias) {
-    bmtype bm;
+    bmtype bm; // todo: bmtype no longer needed (?)
     typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
     EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
     return it->length_;
   }
+
+  std::string EDSDict::getAttr(std::string alias) {
+    typedef EDSClassSet::nth_index<1>::type EDSClassSet_by_alias;
+    EDSClassSet_by_alias::iterator it=d_.get<1>().find(alias);
+    return it->attr_;
+    }
+
 
   uint16_t EDSDict::getIndex(std::string alias) {
     bmtype bm;
@@ -240,10 +247,14 @@ namespace canopen {
     return (value & mask) == constValue;
   }
 
-  void Message::writeCAN(bool writeMode, bool directlyToCanBus) {
-    if (using_master_thread && !directlyToCanBus && alias_ != "Sync") {
+  // void Message::writeCAN(bool writeMode, bool directlyToCanBus) {
+  void Message::writeCAN(bool directlyToCanBus) {
+    if (using_master_thread && !directlyToCanBus && 
+	alias_ != "Sync" && values_.size()==1) {
       // don't write to CAN bus, just put in queue
-      // note: SYNC messages are never queued
+      // note: conditions (3) and (4) mean that SYNC and PDOs messages are never queued,
+      // but rather always written directly to the bus when writeCAN is called
+      // to ensure rigid timing
       outgoingMsgQueue.push(*this);
     } else {
       TPCANMsg msg;
@@ -288,6 +299,9 @@ namespace canopen {
 	msg.ID = 0x600 + nodeID_;
 	msg.MSGTYPE = 0x00;
 	uint8_t len = eds.getLen(alias_);
+	bool writeMode = true;
+	if (eds.getAttr(alias_)=="ro") 
+	  writeMode = false; // read-only-SDOs, e.g. statusword, modes_of_operation_display, ...
 	std::cout << "LEN: " << static_cast<int>(len) << std::endl;
 	if (writeMode == true) {
 	  msg.LEN = 4 + len; // 0x2F(or 0x2b or 0x23) / index / subindex / actual data
@@ -363,13 +377,13 @@ namespace canopen {
   // ------------- wrapper functions for sending SDO, PDO, and NMT messages: --
 
   Message* sendSDO(uint16_t deviceID, std::string alias,
-		   std::string param, bool writeMode) {
+		   std::string param) { // , bool writeMode) {
     Message* m;
     if (param != "") // for SDOs that don't take parameter (e.g. statusword)
       m = new Message(deviceID, alias, eds.getConst(alias, param));
     else 
       m = new Message(deviceID, alias);
-    m->writeCAN(writeMode);
+    m->writeCAN();
     Message* reply = m->waitForSDOAnswer();
     delete m;
     return reply;

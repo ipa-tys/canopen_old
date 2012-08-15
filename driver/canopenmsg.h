@@ -39,6 +39,7 @@ namespace canopen {
     uint32_t getConst(std::string alias, std::string constname);
     uint32_t getMask(std::string alias, std::string constname);
     uint8_t getLen(std::string alias);
+    std::string getAttr(std::string alias);
     uint16_t getIndex(std::string alias);
     uint8_t getSubindex(std::string alias);
     std::string getAlias(uint16_t index, uint8_t subindex);
@@ -62,7 +63,8 @@ namespace canopen {
     Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values); // user-constructed PDO message
     
 
-    void writeCAN(bool writeMode=true, bool directlyToCANBus=false); 
+    // void writeCAN(bool writeMode=true, bool directlyToCANBus=false); 
+    void writeCAN(bool directlyToCANBus=false); 
     // if toOutgoingMsgQueue==true, messages are not written directly on the
     // CAN bus, but instead are put into the queue "outgoingMsgQueue" which
     // is a global variable within the "canopen" namespace
@@ -87,7 +89,7 @@ namespace canopen {
   
   // wrapper functions for sending SDO, PDO, and NMT messages
   // sendSDO calls deliver the device response as return value: 
-  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param="", bool writeMode=true);
+  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param=""); // , bool writeMode=true);
   void sendNMT(std::string param);
   // todo: generic sendPDO
 

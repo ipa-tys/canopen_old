@@ -10,6 +10,8 @@ namespace canopen {
 
   void homingCallback(std::string chainName);
   void initCallback(std::string chainName);
+  void setPosCallback(std::string chainName, std::vector<int> positions);
+  
 
 }
 

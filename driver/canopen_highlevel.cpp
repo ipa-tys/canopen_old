@@ -42,13 +42,13 @@ namespace canopen {
 
   bool initDevice(uint16_t deviceID) {
     sendSDO(deviceID, "controlword", "sm_shutdown");
-    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("ready_to_switch_on")) {
+    while (!sendSDO(deviceID, "statusword")->checkForConstant("ready_to_switch_on")) {
       std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
     sendSDO(deviceID, "controlword", "sm_switch_on");
-    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
+    while (!sendSDO(deviceID, "statusword")->checkForConstant("switched_on")) {
       std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -80,25 +80,25 @@ namespace canopen {
     sendSDO(deviceID, "controlword", "start_homing|enable_ip_mode");
 
     // wait for drive to start moving:
-    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("drive_is_moving"))
+    while (!sendSDO(deviceID, "statusword")->checkForConstant("drive_is_moving"))
       std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
     
     // wait for drive to stop moving:
-    while (sendSDO(deviceID, "statusword", "", false)->checkForConstant("drive_is_moving")) 
+    while (sendSDO(deviceID, "statusword")->checkForConstant("drive_is_moving")) 
       std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
     
     // return true if drive signals it is referenced; false otherwise:
-    return sendSDO(deviceID, "statusword", "", false)->checkForConstant("drive_referenced");
+    return sendSDO(deviceID, "statusword")->checkForConstant("drive_referenced");
   }
 
   bool driveMode(uint16_t deviceID, std::string mode) {
     sendSDO(deviceID, "modes_of_operation", mode);
-    return sendSDO(deviceID, "modes_of_operation_display", "", false)->checkForConstant(mode);
+    return sendSDO(deviceID, "modes_of_operation_display")->checkForConstant(mode);
   }
   
   bool releaseBreak(uint16_t deviceID) {
     sendSDO(deviceID, "controlword", "sm_enable_operation");
-    while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("operation_enable")) {
+    while (!sendSDO(deviceID, "statusword")->checkForConstant("operation_enable")) {
       std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
@@ -123,7 +123,7 @@ namespace canopen {
     return ok; // todo
   }
 
-  void sendPos(uint16_t deviceID, uint32_t pos) {  
+  void sendPos(uint16_t deviceID, int pos) {  
     std::vector<uint32_t> v;
     v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
     v.push_back(0);

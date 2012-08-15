@@ -25,6 +25,9 @@ namespace canopen {
 
     void deviceInit() { initDevice(CANid_); } // could have bool return value
     void deviceHoming() { homing(CANid_); }
+    void setPos(int position) { requested_position_ = position; }
+    int getCurrentPos(int position) { return current_position_;  }
+    int getRequestedPos() { return requested_position_;  }
     // void pushVel(double vel);
     // void sendVel();
     // void sendSDO();
@@ -34,6 +37,8 @@ namespace canopen {
     std::string alias_;
     std::string CANbus_;
     uint16_t CANid_;
+    int requested_position_;
+    int current_position_;
     // double latestVelSent_; // most recent velocity sent
     // std::queue<double> sendVel_queue_;
     // std::queue<TPCANMsg> sendSDO_queue_;
@@ -47,7 +52,10 @@ namespace canopen {
 
     void chainInit();
     void chainHoming();
-    // void setPos(std::vector<int> positions);
+    std::vector<uint16_t> getDeviceIDs();
+    void setPos(std::vector<int> positions);
+    void sendPos();
+    std::vector<int> getRequestedPos();
     // std::vector<int> getPos();
 
     bool sendPosActive_;
