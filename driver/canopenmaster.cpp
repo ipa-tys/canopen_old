@@ -89,7 +89,7 @@ namespace canopen {
 	  outgoingMsgQueue.front().writeCAN(false, true); // todo: remove writeMode!
 	  outgoingMsgQueue.pop();
 	}
-	std::this_thread::sleep_for(std::chrono::microseconds(100)); 
+	std::this_thread::sleep_for(std::chrono::microseconds(10)); 
       }
 
       tic = std::chrono::high_resolution_clock::now();
@@ -110,6 +110,7 @@ namespace canopen {
 
 void initNonPDOSenderThread() {
 
+  // todo: send nonPDOs from here
 
 }
 

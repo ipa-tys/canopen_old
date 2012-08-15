@@ -4,6 +4,30 @@
 #include <queue>
 #include <canopenmaster.h>
 
+void clientFunc() {
+  // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  
+  std::cout << "client thread: outgoing queue size: " << canopen::outgoingMsgQueue.size() << std::endl;
+  // canopen::sendNMT("stop_remote_node"); ok!
+  canopen::initNMT(); // ok!
+
+  std::cout << "AAA" << std::endl;
+  canopen::Message* reply = canopen::sendSDO(12, "statusword", "", false);
+  std::cout << "BBB" << std::endl;
+  std::cout << "Reply:" << std::endl;
+  reply->debugPrint();
+  std::cout << "status check: " << reply->checkForConstant("switch_on_disabled") << std::endl;
+
+
+  std::cout << "client thread: reply received!!" << std::endl;
+  std::cout << "client thread: outgoing queue size: " << canopen::outgoingMsgQueue.size() << std::endl;
+  
+  // canopen::initCallback("chain1");
+
+  while (true) {}
+}
+
+
 int main() {
 
   std::cout << "ho" << std::endl;
@@ -19,17 +43,14 @@ int main() {
   // initialize listener thread:
   canopen::initListenerThread();
 
-  std::cout << "outgoing queue size: " << canopen::outgoingMsgQueue.size() << std::endl;
-  // canopen::sendNMT("stop_remote_node"); ok!
-  canopen::initNMT(); // ok!
-
-  canopen::Message m(12, "statusword");
-  m.writeCAN();
-
-  std::cout << "outgoing queue size: " << canopen::outgoingMsgQueue.size() << std::endl;
-  // canopen::initCallback("chain1");
- 
   canopen::initMasterThread();
+
+
+  std::thread client_thread(clientFunc);
+  client_thread.detach();
+
+ 
+
     
   while (true) {}
   return 0;
