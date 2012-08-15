@@ -43,7 +43,6 @@ install:
 	cp indices.csv ~/.canopen/
 	cp constants.csv ~/.canopen/
 	cp PDOs.csv ~/.canopen/
-	cp robot.csv ~/.canopen/
 
 # cp libcanopenmsg.so /usr/lib
 # cp libcanopen_internal.so /usr/lib

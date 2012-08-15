@@ -207,7 +207,7 @@ namespace canopen {
 	}
       }
       incomingPDOs.push(*this);
-      std::cout << "incomingPDOs queue size: " << incomingPDOs.size() << std::endl;
+      // std::cout << "incomingPDOs queue size: " << incomingPDOs.size() << std::endl;
 
     } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
       uint16_t index = m.Msg.DATA[1] + (m.Msg.DATA[2]<<8);
@@ -240,10 +240,10 @@ namespace canopen {
     uint32_t value = values_[0];
     uint32_t constValue = eds.getConst(alias_, constName);
     uint32_t mask = eds.getMask(alias_, constName);
-    std::cout << "constValue: " << constValue << std::endl; // todo: remove output
+    /* std::cout << "constValue: " << constValue << std::endl; // todo: remove output
     std::cout << "constMask: " << mask << std::endl;
     std::cout << "value: " << value << std::endl;
-    std::cout << "value & constMask: " << (value & mask) << std::endl;
+    std::cout << "value & constMask: " << (value & mask) << std::endl; */
     return (value & mask) == constValue;
   }
 
@@ -276,11 +276,11 @@ namespace canopen {
 	msg.LEN = 8;
 	CAN_Write(h, &msg);
     
-	printf("%02x %d %d\n", msg.ID, msg.MSGTYPE, msg.LEN);
-	for (int i=0; i<8; i++) printf("%02x ", msg.DATA[i]);
-	printf("\n");
+	// printf("%02x %d %d\n", msg.ID, msg.MSGTYPE, msg.LEN);
+	// for (int i=0; i<8; i++) printf("%02x ", msg.DATA[i]);
+	// printf("\n");
       } else if (alias_ == "NMT") {
-	std::cout << "hi, NMT" << std::endl;
+	// std::cout << "hi, NMT" << std::endl;
 	msg.ID = 0;
 	msg.MSGTYPE = 0x00;  // standard message
 	msg.LEN = 2;
@@ -295,14 +295,14 @@ namespace canopen {
 	CAN_Write(h, &msg);
     
       } else { // SDO
-	std::cout << "hi, SDO" << std::endl;
+	// std::cout << "hi, SDO" << std::endl;
 	msg.ID = 0x600 + nodeID_;
 	msg.MSGTYPE = 0x00;
 	uint8_t len = eds.getLen(alias_);
 	bool writeMode = true;
 	if (eds.getAttr(alias_)=="ro") 
 	  writeMode = false; // read-only-SDOs, e.g. statusword, modes_of_operation_display, ...
-	std::cout << "LEN: " << static_cast<int>(len) << std::endl;
+	// std::cout << "LEN: " << static_cast<int>(len) << std::endl;
 	if (writeMode == true) {
 	  msg.LEN = 4 + len; // 0x2F(or 0x2b or 0x23) / index / subindex / actual data
 	  if (len==1) {
@@ -329,7 +329,7 @@ namespace canopen {
 	// put on multiset
 	std::string ss = createMsgHash(msg);
 	pendingSDOReplies.insert(std::make_pair(ss, nullptr));
-	std::cout << "Message hash: " << ss << std::endl;
+	// std::cout << "Message hash: " << ss << std::endl;
 
 	CAN_Write(h, &msg);
       }  // end SDO

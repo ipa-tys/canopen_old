@@ -7,18 +7,18 @@ namespace canopen {
   void Device::updateStatusWithIncomingPDO(Message m) {
     // step 1: get components of message:
     std::vector<std::string> components = pdo.getComponents(m.alias_); // todo: implement Message::getComponents()
-    std::cout << "DEVICE: " << CANid_ << "  MESSAGE " << m.alias_ << "  " << components.size() << std::endl;
+    /* std::cout << "DEVICE: " << CANid_ << "  MESSAGE " << m.alias_ << "  " << components.size() << std::endl;
     for (auto comp : components)
       std::cout << comp << "   ";
-    std::cout << std::endl;
+      std::cout << std::endl; */
     // e.g. if m contains position, update position...
     // so far, only position_actual_value is implemented, todo: statusword etc.
 
     auto it = std::find(components.begin(), components.end(), "position_actual_value");
     if (it != components.end()) { 
       size_t ind = it - components.begin();
-      std::cout << "FOUND POS_ACT_VAL at index " << ind << std::endl;
-      std::cout << "UPDATING POS to: " << m.values_[ind] << std::endl;
+      // std::cout << "FOUND POS_ACT_VAL at index " << ind << std::endl;
+      // std::cout << "UPDATING POS to: " << m.values_[ind] << std::endl;
       current_position_ = m.values_[ind];
     }
   }
@@ -43,6 +43,11 @@ namespace canopen {
       device.deviceHoming();
   }
 
+  void Chain::chainIPmode() {
+    for (auto device : devices_)
+      device.deviceIPmode();
+  }
+
   std::vector<uint16_t> Chain::getDeviceIDs() {
     std::vector<uint16_t> deviceIDs;
     for (auto device : devices_)
@@ -60,7 +65,7 @@ namespace canopen {
   void Chain::sendPos() {
     std::vector<int> requestedPositions = getRequestedPos();
     std::vector<uint16_t> deviceIDs = getDeviceIDs();
-    std::cout << "Chain: " << requestedPositions.size() << "   " << deviceIDs.size() << std::endl;
+    // std::cout << "Chain: " << requestedPositions.size() << "   " << deviceIDs.size() << std::endl;
     for (int i=0; i<deviceIDs.size(); i++)
       canopen::sendPos(deviceIDs[i], requestedPositions[i]);
   }
@@ -69,8 +74,14 @@ namespace canopen {
     std::vector<int> requestedPositions;
     for (auto device : devices_)
       requestedPositions.push_back(device.getRequestedPos());
-    std::cout << "POS: " << requestedPositions[0] << std::endl;
     return requestedPositions;
+  }
+
+  std::vector<int> Chain::getCurrentPos() {
+    std::vector<int> currentPositions;
+    for (auto device : devices_)
+      currentPositions.push_back(device.getCurrentPos());
+    return currentPositions;
   }
 
   void Chain::updateStatusWithIncomingPDO(Message m) { // todo save device lookup by using a map

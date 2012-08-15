@@ -25,8 +25,9 @@ namespace canopen {
 
     void deviceInit() { initDevice(CANid_); } // could have bool return value
     void deviceHoming() { homing(CANid_); }
+    void deviceIPmode() { enableIPmode(CANid_); }
     void setPos(int position) { requested_position_ = position; }
-    int getCurrentPos(int position) { return current_position_;  }
+    int getCurrentPos() { return current_position_;  }
     int getRequestedPos() { return requested_position_;  }
     void updateStatusWithIncomingPDO(Message m);
     // void pushVel(double vel);
@@ -53,13 +54,14 @@ namespace canopen {
 
     void chainInit();
     void chainHoming();
+    void chainIPmode();
     std::vector<uint16_t> getDeviceIDs();
     void setPos(std::vector<int> positions);
     void sendPos();
     void updateStatusWithIncomingPDO(Message m); // todo: save deviceID lookup by using a map
 
     std::vector<int> getRequestedPos();
-    // std::vector<int> getPos();
+    std::vector<int> getCurrentPos();
 
     bool sendPosActive_;
     // private:

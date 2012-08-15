@@ -1,4 +1,11 @@
-all: single_device multiple_devices minimal chainTest canopenmasterTest
+all: single_device multiple_devices minimal chainTest canopenmasterTest canopenmaster_multiple_devices
+
+canopenmaster_multiple_devices: canopenmaster_multiple_devices.o
+	g++ canopenmaster_multiple_devices.o -o canopenmaster_multiple_devices -lpthread -lcanopen -lpcan
+
+canopenmaster_multiple_devices.o: canopenmaster_multiple_devices.cpp
+	g++ -c canopenmaster_multiple_devices.cpp -std=c++0x
+
 
 canopenmasterTest: canopenmasterTest.o
 	g++ canopenmasterTest.o -o canopenmasterTest -lpthread -lcanopen -lpcan
@@ -43,5 +50,5 @@ test_min2.o: test_min2.cpp
 	g++ -c test_min2.cpp -std=c++0x
 
 clean:
-	\rm -f *.o *~ single_device multiple_devices minimal chainTest canopenmasterTest
+	\rm -f *.o *~ single_device multiple_devices minimal chainTest canopenmasterTest canopenmaster_multiple_devices
 

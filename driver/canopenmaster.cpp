@@ -18,8 +18,16 @@ namespace canopen {
     chainMap[chainName]->chainInit();
   }
 
+  void IPmodeCallback(std::string chainName) { 
+    chainMap[chainName]->chainIPmode();
+  }
+
   void setPosCallback(std::string chainName, std::vector<int> positions) {
     chainMap[chainName]->setPos(positions);
+  }
+
+  std::vector<int> getCurrentPosCallback(std::string chainName) {
+    return chainMap[chainName]->getCurrentPos();
   }
 
   void initChainMap(std::string robotDescFilename) {
@@ -67,32 +75,30 @@ namespace canopen {
     // send out to CAN bus at specified rate:
     auto tic = std::chrono::high_resolution_clock::now();
     bool any_SendPosActive;
+    bool noSyncYet = true;
     while (true) {
-      any_SendPosActive = false;
-      for (int i=0; i<2; i++) {
-	sendSync();
-	std::this_thread::sleep_for(controllerCycleDuration_msec);
-      }
       tic = std::chrono::high_resolution_clock::now();
-      // send PDOs to CAN bus (if chain has sendPosActive_==true):
-      for (auto chain : chainMap) {
-	std::cout << "CHAIN: " << chain.second->alias_ << std::endl;
-	std::vector<int> rp = chain.second->getRequestedPos();
-	std::cout << "CHAIN REQ POS: " << rp[0] << std::endl;
-	if (chain.second->sendPosActive_) {
+
+      any_SendPosActive = false;
+      for (auto chain : chainMap) 
+	if (chain.second->sendPosActive_)
 	  any_SendPosActive = true;
-	  chain.second->sendPos();
+
+      if (any_SendPosActive && noSyncYet) {
+	noSyncYet = false;
+	for (int i=0; i<2; i++) {
+	  sendSync();
+	  std::this_thread::sleep_for(controllerCycleDuration_msec);
 	}
-	else // todo: only for debug, remove later
-	  std::cout << chain.first << " NOSEND!" << std::endl;
       }
-	
-      std::cout << "master tic toc" << std::endl;
-      std::cout << "master outgoing queue size: " << outgoingMsgQueue.size() << std::endl;
+
+      // send PDOs to CAN bus (if chain has sendPosActive_==true):
+      for (auto chain : chainMap) 
+	if (chain.second->sendPosActive_) 
+	  chain.second->sendPos();
       
-      // send sync:
       if (any_SendPosActive) {
-	std::cout << "SYNC ACTIVE!" << std::endl;
+	std::cout << "SYNC" << std::endl;
 	sendSync();
       }
 
@@ -134,7 +140,6 @@ namespace canopen {
       if (incomingPDOs.size()>1) { // todo: change to ">0" as soon as queue is thread-safe
 	Message m = incomingPDOs.front();
 	incomingPDOs.pop();
-	// std::cout << "Dispatch PDO to: " << id2chain[m.nodeID_] << std::endl;
 	chainMap[ id2chain[m.nodeID_] ]->updateStatusWithIncomingPDO(m);
 	// fetching can be arbitrarily fast:
 	std::this_thread::sleep_for(std::chrono::milliseconds(5)); 
