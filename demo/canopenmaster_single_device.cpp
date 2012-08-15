@@ -29,7 +29,7 @@ void clientFunc() {
 
 int main() {
   canopen::using_master_thread = true;
-  canopen::initChainMap("/home/tys/git/other/canopen/driver/robot1.csv");
+  canopen::initChainMap("/home/tys/git/other/canopen/demo/single_device.csv");
 
   // initialize CAN device driver:
   if (!canopen::openConnection("/dev/pcan32")) {

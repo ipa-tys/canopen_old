@@ -23,7 +23,7 @@ libcanopen.a: canopen_internal.o canopenmsg.o canopen_highlevel.o chain.o canope
 	ar rv libcanopen.a canopenmaster.o
 
 clean:
-	\rm *.o *.a *.so *~ 
+	\rm -f *.o *.a *.so *~ 
 
 uninstall:
 	rm /usr/lib/libcanopen.a
@@ -32,6 +32,9 @@ uninstall:
 	rm /usr/include/canopen_highlevel.h
 	rm /usr/include/canopenmsg.h
 	rm /usr/include/canopen_internal.h
+	rm ~/.canopen/indices.csv
+	rm ~/.canopen/PDOs.csv
+	rm ~/.canopen/constants.csv
 
 install:
 	cp libcanopen.a /usr/lib
