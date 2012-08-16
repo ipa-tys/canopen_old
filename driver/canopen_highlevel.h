@@ -12,7 +12,10 @@ namespace canopen {
   // general communication commands:
   bool openConnection(std::string devName); // initialize device driver
   void closeConnection();
+
   void initListenerThread(); // initialize listener thread
+  void listenerFunc();
+
   void faultReset(uint16_t deviceID);
   void initNMT();
   bool initDevice(uint16_t deviceID); // init NMT and 402 state machines

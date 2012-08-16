@@ -7,7 +7,9 @@ namespace canopen {
 
   void initChainMap(std::string robotDescFilename);
   void initMasterThread();
+  void masterFunc();
   void initIncomingPDOProcessorThread();
+  void incomingPDOProcessorFunc();
 
   void initCallback(std::string chainName);
   void homingCallback(std::string chainName);
@@ -16,6 +18,7 @@ namespace canopen {
   void setPosCallback(std::string chainName, std::vector<int> positions);
   std::vector<int> getCurrentPosCallback(std::string chainName);
 
+  extern std::map<std::string, Chain*> chainMap;
 }
 
 #endif

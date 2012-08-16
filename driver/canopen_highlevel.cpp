@@ -17,7 +17,9 @@ namespace canopen {
   void listenerFunc() {
     TPCANRdMsg m;
     Message* msg;
-    while (true) msg = Message::readCAN(true);
+    while (true) {
+      msg = Message::readCAN(true);
+    }
   }
 
   void initListenerThread() {
