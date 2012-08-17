@@ -79,7 +79,7 @@ This example shows how to communicate with a group (``chain'') of devices, e.g. 
 
 If you compare \texttt{demo/single\_device} and \texttt{demo/multiple\_devices}, you will see the use of the API commands is completely identical in both cases. Of course, the API commands can also be used in this way to communicate simultaneously, for example, with an arm and a mobile base.
 
-\section{Using a master thread to coordinate communication and to keep device information up-to-date}
+\section{CANopen with a master thread}
 
 The {\em master thread} implemented in \texttt{canopenmaster.cpp} adds on top of the functionality seen in the previous examples. As has been seen above, its use is optional and the user is free to rely only on the message sending and parsing functionality implemented in the API.
 
@@ -92,8 +92,6 @@ In the framework-independent examples of this section, we simply call the
 \subsection{canopenmaster\_single\_device example}
 
 In the file \texttt{demo/canopenmaster\_single\_device}, we show a very simple example of how to use the pre-implemented master thread. To show its use in a framework-independent way, we invoke the callbacks from a separate thread in the examples. 
-
-\subsubsection{Main thread}
 
 \begin{verbatim}
 #include <canopenmaster.h>
@@ -115,7 +113,6 @@ chain1 joint1 /dev/pcan32 12
 \end{verbatim}
 First entry in the row is the chain name. All other entries are triples (devicename devicebus deviceCANid). The command \texttt{canopen::initChainMap} takes this specification and creates a map (hash table), called \texttt{canopen::chainMap} that links chain names to (pointers to) ojects of class \texttt{canopen::Chain} (\texttt{chain.h}).
 
-
 \begin{verbatim}
   if (!canopen::openConnection("/dev/pcan32")) {
     std::cout << "Cannot open CAN device; aborting." << std::endl;
@@ -123,16 +120,28 @@ First entry in the row is the chain name. All other entries are triples (devicen
   } 
   canopen::initNMT();
   canopen::initListenerThread();
-  canopen::initIncomingPDOProcessorThread();
-  canopen::initMasterThread();
+\end{verbatim}
+These commands are already known from the direct API call examples above and are used in exactly the same way here.
 
-  // client_thread simulates callback invocations from a client:
-  std::thread client_thread(clientFunc);
-  client_thread.detach();
-    
+\begin{verbatim}
+canopen::initIncomingPDOProcessorThread();
+\end{verbatim}
+Remember that without a master, incoming PDOs are simply stored in the queue \texttt{incomingPDOs}. Using a {\em master} thread implies having explicit object representations of devices and device groups (chains). These objects are created using the \texttt{canopen::initChainMap} command mentioned above. The command \texttt{initIncomingPDOProcessorThread} launches a thread that processes messages from this queue: based on the PDO cobID the PDOProcessor triggers a member function \texttt{canopen::Chain::updateStatusWithIncomingPDO} in the {\em canopen::Chain} object to which the device from which the PDO was sent belongs. This function can check if any object (index/subindex) from the object dictionary is contained in that PDO which it can use to update some of its status member variables. It then triggers a member function \texttt{canopen::Device::updateStatusWithIncomingPDO} of the object representing the device from which the PDO was sent. Again, this function can check for the presence of specific objects in the PDO using the member function \texttt{Message::find\_component} ({\bf todo}!) and update its status member variables. Currently, the only check performed is for the presence of the object \texttt{position\_actual\_value} (index 0x6064; mapped in the Schunk default tPDO), which if present in a PDO is used to update the member variable \texttt{current\_position\_}. Other checks and updates can be performed similarly and incorporated into the function \texttt{Device::updateStatusWithIncomingPDO} to extend the functionality.
+
+\begin{verbatim}
+canopen::initMasterThread();
+\end{verbatim}
+
+
+
+
+\begin{verbatim}
   while (true)
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 \end{verbatim}
+
+    
+
  
 
 
