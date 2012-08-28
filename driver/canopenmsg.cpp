@@ -377,9 +377,9 @@ namespace canopen {
   // ------------- wrapper functions for sending SDO, PDO, and NMT messages: --
 
   Message* sendSDO(uint16_t deviceID, std::string alias,
-		   std::string param) { // , bool writeMode) {
+		   std::string param) { 
     Message* m;
-    if (param != "") // for SDOs that don't take parameter (e.g. statusword)
+    if (param != "") 
       m = new Message(deviceID, alias, eds.getConst(alias, param));
     else 
       m = new Message(deviceID, alias);
@@ -393,6 +393,11 @@ namespace canopen {
     Message(0, "NMT", eds.getConst("NMT", param)).writeCAN();
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
   }
+
+  void sendPDO(uint16_t deviceID, std::string alias, std::vector<uint32_t> data) {
+    Message(deviceID, alias, data).writeCAN();
+  }
+
 }
 
 // todo: PDOs

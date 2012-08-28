@@ -7,10 +7,6 @@ namespace canopen {
   void Device::updateStatusWithIncomingPDO(Message m) {
     // step 1: get components of message:
     std::vector<std::string> components = pdo.getComponents(m.alias_); // todo: implement Message::getComponents()
-    /* std::cout << "DEVICE: " << CANid_ << "  MESSAGE " << m.alias_ << "  " << components.size() << std::endl;
-    for (auto comp : components)
-      std::cout << comp << "   ";
-      std::cout << std::endl; */
     // e.g. if m contains position, update position...
     // so far, only position_actual_value is implemented, todo: statusword etc.
 

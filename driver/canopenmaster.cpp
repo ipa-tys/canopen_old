@@ -104,7 +104,6 @@ namespace canopen {
 
       while (std::chrono::high_resolution_clock::now() < tic + controllerCycleDuration_msec) {
 	// fetch a message from the outgoingMsgQueue and send to CAN bus:
-	// todo: move to thread pool; just sleep here!
 	if (outgoingMsgQueue.size() > 0) {
 	  outgoingMsgQueue.front().writeCAN(true); 
 	  outgoingMsgQueue.pop();

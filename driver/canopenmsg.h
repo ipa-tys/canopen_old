@@ -91,6 +91,7 @@ namespace canopen {
   // sendSDO calls deliver the device response as return value: 
   Message* sendSDO(uint16_t deviceID, std::string alias, std::string param=""); // , bool writeMode=true);
   void sendNMT(std::string param);
+  void sendPDO(uint16_t deviceID, std::string alias, std::vector<uint32_t> data);
   // todo: generic sendPDO
 
   // only for testing purposes, print map of sent SDOs waiting for reply:

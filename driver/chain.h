@@ -58,15 +58,15 @@ namespace canopen {
     std::vector<uint16_t> getDeviceIDs();
     void setPos(std::vector<int> positions);
     void sendPos();
-    void updateStatusWithIncomingPDO(Message m); // todo: save deviceID lookup by using a map
+    void updateStatusWithIncomingPDO(Message m);                              // todo: save deviceID lookup by using a map
 
     std::vector<int> getRequestedPos();
     std::vector<int> getCurrentPos();
 
     bool sendPosActive_;
-    // private:
+                                                                                  // private:
     std::string alias_;
-    std::vector<Device> devices_; // todo: this should be a map: int CANid -> device object
+    std::vector<Device> devices_;                                              // todo: this should be a map: int CANid -> device object
 
   };
 

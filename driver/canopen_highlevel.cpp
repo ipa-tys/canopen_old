@@ -134,4 +134,10 @@ namespace canopen {
     Message(deviceID, "schunk_default_rPDO", v).writeCAN();
   }
 
+  void sendPos1(uint16_t deviceID, int pos) {
+    std::vector<uint32_t> data = {eds.getConst("controlword", "start_homing|enable_ip_mode"),
+				  0, pos};
+    sendPDO(deviceID, "schunk_default_rPDO", data);
+  }
+
 }
