@@ -65,12 +65,7 @@ namespace canopen {
 
   class Chain {
   public:
-
     Chain(ChainDescription chainDesc);
-
-    Chain(std::string chainName, std::vector<std::string> deviceNames,
-	  std::vector<std::string> CANbuses, std::vector<uint16_t> CANids);
-
     void chainInit();
     void chainHoming();
     void chainIPmode();
