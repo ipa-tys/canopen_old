@@ -3,6 +3,7 @@
 #include <pwd.h>
 #include <queue>
 #include <canopenmaster.h>
+#include "yaml-cpp/yaml.h"
 
 // this shows a demo of how a client can communicate with the master by
 // invoking specific callback functions. Here, this is done within the same
@@ -29,7 +30,11 @@ void clientFunc() {
 
 int main() {
   canopen::using_master_thread = true;
-  canopen::initChainMap("/home/tys/git/other/canopen/demo/single_device.csv");
+  // todo: canopen::parseChainDesc(filename);
+  // canopen::initChainMap("/home/tys/git/other/canopen/demo/single_device.csv");
+
+  auto chainDesc = canopen::parseChainDescription("single_device.yaml");
+  canopen::initChainMap(chainDesc);
 
   // initialize CAN device driver:
   if (!canopen::openConnection("/dev/pcan32")) {

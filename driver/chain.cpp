@@ -1,6 +1,40 @@
 #include "chain.h"
 
 namespace canopen {
+  // parsing chain and device descriptions:
+  void operator>> (const YAML::Node& node, DeviceDescription& d) {
+    node["name"] >> d.name;
+    node["id"] >> d.id;
+    node["bus"] >> d.bus;
+  }
+
+  void operator>> (const YAML::Node& node, ChainDescription& c) {
+    node["name"] >> c.name;
+    const YAML::Node& devices = node["devices"];
+    for (int i=0; i<devices.size(); i++) {
+      DeviceDescription d;
+      devices[i] >> d;
+      c.devices.push_back(d);
+    }
+  }
+
+  std::vector<ChainDescription> parseChainDescription(std::string filename) {
+    std::ifstream fin(filename);
+    YAML::Parser parser(fin);
+    YAML::Node doc;
+    parser.GetNextDocument(doc);
+    
+    std::vector<canopen::ChainDescription> chainDesc;
+  
+    for (int i=0; i<doc.size(); i++) {
+      canopen::ChainDescription chain;
+      doc[i] >> chain;
+      chainDesc.push_back(chain);
+    }
+    return chainDesc;
+  }
+
+
 
   // ---------- Device: everything inline so far
 
@@ -20,6 +54,12 @@ namespace canopen {
   }
 
   // ---------- Chain:
+
+  Chain::Chain(ChainDescription chainDesc):
+    alias_(chainDesc.name), sendPosActive_(false) {
+    for (auto d : chainDesc.devices)
+      devices_.push_back( Device(d.name, d.bus, d.id) );
+  }
 
   Chain::Chain(std::string chainName, 	std::vector<std::string> deviceNames,
 	       std::vector<std::string> CANbuses, std::vector<uint16_t> CANids):

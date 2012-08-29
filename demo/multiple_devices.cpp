@@ -59,12 +59,12 @@ int main(int argc, char *argv[]) {
   for (int j=0; j<10; j++) {
     for (int i=0; i<=300; i++) {
       for (auto it : deviceIDs) canopen::sendPos(it, pos);
-      pos -= 35;
+      pos += 35;
       canopen::sendSync(10);
     }
     for (int i=300; i>0; i--) {
       for (auto it : deviceIDs) canopen::sendPos(it, pos);
-      pos -= 35;
+      pos += 35;
       canopen::sendSync(10);
     }   
   }

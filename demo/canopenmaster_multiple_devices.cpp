@@ -4,6 +4,7 @@
 #include <queue>
 #include <cmath>
 #include <canopenmaster.h>
+#include "yaml-cpp/yaml.h"
 
 // this shows a demo of how a client can communicate with the master by
 // invoking specific callback functions. Here, this is done within the same
@@ -13,45 +14,17 @@
 
 void clientFunc() { 
   canopen::initCallback("arm1");
-  
   canopen::homingCallback("arm1");
-  
   canopen::IPmodeCallback("arm1");
+
   for (int i=0; i<8; i++) {
     std::cout << "..." << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
-    
-  
-  /* std::vector<int> initial_pos = canopen::getCurrentPosCallback("arm1");
-  for (int i=0; i<initial_pos.size(); i++)
-    initial_pos[i] += 35;
-  canopen::setPosCallback("arm1", initial_pos);
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  initial_pos = canopen::getCurrentPosCallback("arm1");
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  initial_pos = canopen::getCurrentPosCallback("arm1");
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  initial_pos = canopen::getCurrentPosCallback("arm1");
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  initial_pos = canopen::getCurrentPosCallback("arm1");
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  initial_pos = canopen::getCurrentPosCallback("arm1");
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  initial_pos = canopen::getCurrentPosCallback("arm1");
-  std::this_thread::sleep_for(std::chrono::milliseconds(50));
-  std::cout << "INITIAL POS: ";
-  for (auto it : initial_pos) 
-    std::cout << it << "  ";
-    std::cout << std::endl; */
-  
-
-  // uint32_t pos = 0;
-  //  for (int j=0; j<2; j++) {
-
-  std::vector<int> current_pos = canopen::getCurrentPosCallback("arm1");
-  std::vector<int> request_pos = current_pos;
+  std::vector<int32_t> current_pos = canopen::getCurrentPosCallback("arm1");
+  std::vector<int32_t> request_pos = current_pos;
+  // std::vector<int32_t> request_pos = {0,0,0,0,0,0};
 
   std::vector<int> incr = {20,20,20,20,20,20};
 
@@ -66,8 +39,10 @@ void clientFunc() {
       } else  {
 	incr[k] = -20;
       } 
-	
-      if (abs(request_pos[k] - current_pos[k]) > 200) {
+
+      if (abs(request_pos[k] - current_pos[k]) > 20000) {
+	request_pos[k] = current_pos[k] - incr[k]/2;
+      } else if (abs(request_pos[k] - current_pos[k]) > 200) {
 	request_pos[k] = request_pos[k] + incr[k]/2;
       } else {
 	request_pos[k] = request_pos[k] + incr[k];
@@ -90,7 +65,6 @@ void clientFunc() {
       std::cout << it << "  ";
     std::cout << std::endl;
 
-
     canopen::setPosCallback("arm1", request_pos);
     // this should match the controller_cycle_duration and in practice would be
     // the feedback loop, cf. ROS demos
@@ -103,8 +77,11 @@ void clientFunc() {
 
 int main() {
   canopen::using_master_thread = true; // todo: can get rid of this I think!
-  canopen::initChainMap("/home/tys/git/other/canopen/demo/multiple_devices.csv");
+  // canopen::initChainMap("/home/tys/git/other/canopen/demo/multiple_devices.csv");
   
+  auto chainDesc = canopen::parseChainDescription("multiple_devices.yaml");
+  canopen::initChainMap(chainDesc);
+
   // initialize CAN device driver:
   if (!canopen::openConnection("/dev/pcan32")) {
     std::cout << "Cannot open CAN device; aborting." << std::endl;

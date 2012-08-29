@@ -7,6 +7,8 @@
 #include "canopenmaster.h"
 
 namespace canopen {
+  
+
   std::chrono::milliseconds controllerCycleDuration_msec(10);
   std::map<std::string, Chain*> chainMap;
 
@@ -23,11 +25,19 @@ namespace canopen {
   }
 
   void setPosCallback(std::string chainName, std::vector<int> positions) {
+    std::cout << "setposcallback: " << chainName << std::endl;
     chainMap[chainName]->setPos(positions);
   }
 
   std::vector<int> getCurrentPosCallback(std::string chainName) {
     return chainMap[chainName]->getCurrentPos();
+  }
+
+  void initChainMap(std::vector<ChainDescription> chainDesc) {
+    for (auto c : chainDesc) {
+      std::cout << "init chain: " << c.name << std::endl;
+      chainMap[c.name] = new Chain(c);
+    }
   }
 
   void initChainMap(std::string robotDescFilename) {

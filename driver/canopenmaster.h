@@ -1,11 +1,10 @@
 #ifndef CANOPENMASTER_H
 #define CANOPENMASTER_H
-
 #include "chain.h"
 
-namespace canopen {
 
-  void initChainMap(std::string robotDescFilename);
+namespace canopen {
+  void initChainMap(std::vector<ChainDescription> chainDesc);
   void initMasterThread();
   void masterFunc();
   void initIncomingPDOProcessorThread();

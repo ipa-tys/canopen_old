@@ -10,9 +10,26 @@
 #include <regex>
 #include <pwd.h>
 #include <fstream>
+#include "yaml-cpp/yaml.h"
 #include "canopen_highlevel.h"
 
 namespace canopen {
+ // parsing chain and device descriptions:
+  struct DeviceDescription {
+    std::string name;
+    int id;
+    std::string bus;
+  };
+
+  struct ChainDescription {
+    std::string name;
+    std::vector<DeviceDescription> devices;
+  };
+  void operator>> (const YAML::Node& node, DeviceDescription& d);
+  void operator>> (const YAML::Node& node, ChainDescription& c);
+  std::vector<ChainDescription> parseChainDescription(std::string filename);
+
+
 
   class Device {
   public:
@@ -48,6 +65,8 @@ namespace canopen {
 
   class Chain {
   public:
+
+    Chain(ChainDescription chainDesc);
 
     Chain(std::string chainName, std::vector<std::string> deviceNames,
 	  std::vector<std::string> CANbuses, std::vector<uint16_t> CANids);
