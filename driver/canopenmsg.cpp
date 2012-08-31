@@ -15,6 +15,8 @@ namespace canopen {
 
   // -------------- EDSDict member functions:
 
+
+
   EDSDict::EDSDict() { // constructor parses indices.csv, constants.csv, PDOs.csv
     int uid = getuid();
     passwd * pw = getpwuid(uid);
@@ -27,7 +29,7 @@ namespace canopen {
       uint64_t mask;
       uint64_t value;
     } consts;
-
+   
     // parse constants:
     std::multimap<std::string, consts > constants;
     std::string constFileName = homeDir + "/.canopen/constants.csv";

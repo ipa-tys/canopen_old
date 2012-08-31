@@ -29,6 +29,11 @@ namespace canopen {
     chainMap[chainName]->setPos(positions);
   }
 
+  void jointVelocitiesCallback(std::string chainName, std::vector<int> velocities) {
+    std::cout << "jointvelocitiescallback: " << chainName << std::endl;
+    // chainMap[chainName]->setPos(positions);  todo!
+  }
+
   std::vector<int> getCurrentPosCallback(std::string chainName) {
     return chainMap[chainName]->getCurrentPos();
   }
