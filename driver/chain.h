@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <libpcan.h>
+#include <cmath>
 #include <set>
 #include <map>
 #include <queue>
@@ -13,14 +14,16 @@
 #include "yaml-cpp/yaml.h"
 #include "canopen_highlevel.h"
 
+#define _USE_MATH_DEFINES
+
 namespace canopen {
- // parsing chain and device descriptions:
+
+  // parsing chain and device descriptions:
   struct DeviceDescription {
     std::string name;
     int id;
     std::string bus;
   };
-
   struct ChainDescription {
     std::string name;
     std::vector<DeviceDescription> devices;
@@ -35,9 +38,8 @@ namespace canopen {
   public:
 
   Device(std::string alias, std::string CANbus, uint16_t CANid):
-    alias_(alias), CANbus_(CANbus), CANid_(CANid) {
-      // todo: only for testing!!
-      // init currentVel to fixed value
+    alias_(alias), CANbus_(CANbus), CANid_(CANid),
+      current_position_(0), current_velocity_(0), requested_position_(0) {
     }
 
     void deviceInit() { initDevice(CANid_); } // could have bool return value
@@ -57,8 +59,8 @@ namespace canopen {
     std::string CANbus_;
     uint16_t CANid_;
     int requested_position_;
-    int current_position_;
-    // double latestVelSent_; // most recent velocity sent
+    double current_position_; // rad
+    double current_velocity_; // rad/s
     // std::queue<double> sendVel_queue_;
     // std::queue<TPCANMsg> sendSDO_queue_;
   };

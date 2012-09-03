@@ -49,7 +49,9 @@ namespace canopen {
       size_t ind = it - components.begin();
       // std::cout << "FOUND POS_ACT_VAL at index " << ind << std::endl;
       // std::cout << "UPDATING POS to: " << m.values_[ind] << std::endl;
-      current_position_ = m.values_[ind];
+      std::cout << "hi" << std::endl;
+      current_position_ = 2* M_PI * m.values_[ind] / 360000.0;
+      std::cout << "POS_ACT_VAL: " << m.values_[ind] << "   " << current_position_ << std::endl;
     }
   }
 

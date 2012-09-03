@@ -18,13 +18,16 @@ void clientFunc() {
   std::this_thread::sleep_for(std::chrono::seconds(4));
     
   uint32_t pos = 0;
-  for (int i=0; i<500; i++) {
+  for (int i=0; i<3600; i++) {
     canopen::setPosCallback("chain1", {pos});
     pos += 100;
     // this should match the controller_cycle_duration and in practice would be
     // the feedback loop, cf. ROS demos
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
+
+  // std::this_thread::sleep_for(std::chrono::seconds(1));
+  // canopen::homingCallback("chain1");
   while (true) {}
 }
 
@@ -43,8 +46,11 @@ int main() {
   } 
   canopen::initNMT();
   canopen::initListenerThread();
+  std::cout << "1 - hi" << std::endl;
   canopen::initIncomingPDOProcessorThread();
+  std::cout << "2 - hi" << std::endl;
   canopen::initMasterThread();
+  std::cout << "3 - hi" << std::endl;
 
   // client_thread simulates callback invocations from a client:
   std::thread client_thread(clientFunc);
