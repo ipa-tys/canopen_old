@@ -34,33 +34,50 @@ namespace canopen {
     return chainDesc;
   }
 
+  // ---------- Device: (also see inline definitions in chain.h)
 
+  void Device::updateActualPosAndVel(double newPos, std::chrono::microseconds newTimeStamp) {
+    assert(timeStamp_ < newTimeStamp && 
+	   "Incoming message timeStamp overflow (std::chrono::microseconds); " 
+	   "adapt timeStamp_ member variable in class canopen::Message!");
 
-  // ---------- Device: everything inline so far
+    // only update velocity if there is already a previous pos and timeStamp stored:
+    if (timeStamp_ != std::chrono::microseconds(0)) {
+      std::chrono::microseconds deltaTime( newTimeStamp - timeStamp_ );
+      double deltaTime_double = static_cast<double>(deltaTime.count()) * 0.000001;
+      actualVel_ = (newPos - actualPos_) / deltaTime_double;
+      std::cout << deltaTime_double << "   " << newPos << "  " << actualVel_ << std::endl;
+    }
+    actualPos_ = newPos;
+    timeStamp_ = newTimeStamp;
+  }
 
   void Device::updateStatusWithIncomingPDO(Message m) {
-    // step 1: get components of message:
-    std::vector<std::string> components = pdo.getComponents(m.alias_); // todo: implement Message::getComponents()
-    // e.g. if m contains position, update position...
-    // so far, only position_actual_value is implemented, todo: statusword etc.
+    if (m.contains("position_actual_values")) 
+      updateActualPosAndVel( mdeg2rad( m.get("position_actual_values") ),
+			     m.timeStamp_);
 
-    auto it = std::find(components.begin(), components.end(), "position_actual_value");
-    if (it != components.end()) { 
-      size_t ind = it - components.begin();
-      // std::cout << "FOUND POS_ACT_VAL at index " << ind << std::endl;
-      // std::cout << "UPDATING POS to: " << m.values_[ind] << std::endl;
-      std::cout << "hi" << std::endl;
-      current_position_ = 2* M_PI * m.values_[ind] / 360000.0;
-      std::cout << "POS_ACT_VAL: " << m.values_[ind] << "   " << current_position_ << std::endl;
-    }
+    // Note: you can add any other CANopen indices here that should be
+    // continuously updated in canopen::Device member variables
+    // (you can use Device::updateActualPosAndVel as an example)
+  }
+
+  void Device::setPos(double pos) {
+    desiredPos_ = pos;
+    desiredVel_ = (pos - desiredPos_) / (sync_deltaT_msec_ / 1000.0);
+  }
+
+  void Device::setVel(double vel) {
+    desiredVel_ = vel;
+    desiredPos_ = desiredPos_ + vel * (sync_deltaT_msec_ / 1000.0);
   }
 
   // ---------- Chain:
 
-  Chain::Chain(ChainDescription chainDesc):
+  Chain::Chain(ChainDescription chainDesc, uint32_t sync_deltaT_msec):
     alias_(chainDesc.name), sendPosActive_(false) {
     for (auto d : chainDesc.devices)
-      devices_.push_back( Device(d.name, d.bus, d.id) );
+      devices_.push_back( Device(d.name, d.bus, d.id, sync_deltaT_msec) );
   }
 
   void Chain::chainInit() {
@@ -85,33 +102,53 @@ namespace canopen {
     return deviceIDs;
   }
 
-  void Chain::setPos(std::vector<int> positions) {
+  void Chain::setPos(std::vector<double> positions) {
     if (!sendPosActive_)
       sendPosActive_ = true;
     for (int i=0; i<positions.size(); i++)
       devices_[i].setPos(positions[i]);
   }
 
+  void Chain::setVel(std::vector<double> velocities) {
+    if (!sendPosActive_)
+      sendPosActive_ = true;
+    for (int i=0; i<velocities.size(); i++)
+      devices_[i].setVel(velocities[i]);
+  }
+
   void Chain::sendPos() {
-    std::vector<int> requestedPositions = getRequestedPos();
+    std::vector<double> desiredPositions = getDesiredPos();
     std::vector<uint16_t> deviceIDs = getDeviceIDs();
-    // std::cout << "Chain: " << requestedPositions.size() << "   " << deviceIDs.size() << std::endl;
     for (int i=0; i<deviceIDs.size(); i++)
-      canopen::sendPos(deviceIDs[i], requestedPositions[i]);
+      canopen::sendPos(deviceIDs[i], desiredPositions[i]);
   }
 
-  std::vector<int> Chain::getRequestedPos() {
-    std::vector<int> requestedPositions;
+  std::vector<double> Chain::getDesiredPos() {
+    std::vector<double> desiredPositions;
     for (auto device : devices_)
-      requestedPositions.push_back(device.getRequestedPos());
-    return requestedPositions;
+      desiredPositions.push_back(device.getDesiredPos());
+    return desiredPositions;
   }
 
-  std::vector<int> Chain::getCurrentPos() {
-    std::vector<int> currentPositions;
+  std::vector<double> Chain::getActualPos() {
+    std::vector<double> actualPositions;
     for (auto device : devices_)
-      currentPositions.push_back(device.getCurrentPos());
-    return currentPositions;
+      actualPositions.push_back(device.getActualPos());
+    return actualPositions;
+  }
+
+  std::vector<double> Chain::getDesiredVel() {
+    std::vector<double> desiredVelocities;
+    for (auto device : devices_)
+      desiredVelocities.push_back(device.getDesiredVel());
+    return desiredVelocities;
+  }
+  
+  std::vector<double> Chain::getActualVel() {
+    std::vector<double> actualVelocities;
+    for (auto device : devices_)
+      actualVelocities.push_back(device.getActualVel());
+    return actualVelocities;
   }
 
   void Chain::updateStatusWithIncomingPDO(Message m) { // todo save device lookup by using a map

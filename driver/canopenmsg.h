@@ -58,12 +58,15 @@ namespace canopen {
 
   class Message {  // abstract representation of CANopen messages
   public:
-    Message(TPCANRdMsg m); // constructor for messages coming in from bus (TPCANRdMsg)
-    Message(uint8_t nodeID, std::string alias, uint32_t value=0); // user-constructed non-PDO message
-    Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values); // user-constructed PDO message
+    Message(TPCANRdMsg m);
+    // constructor for messages coming in from bus (TPCANRdMsg)
     
-    // todo: getValues() etc.
-
+    Message(uint8_t nodeID, std::string alias, uint32_t value=0);
+    // user-constructed non-PDO message
+    
+    Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values);
+    // user-constructed PDO message
+    
     void writeCAN(bool directlyToCANBus=false); 
     // if toOutgoingMsgQueue==true, messages are not written directly on the
     // CAN bus, but instead are put into the queue "outgoingMsgQueue" which
@@ -71,34 +74,45 @@ namespace canopen {
 
     static Message* readCAN(bool blocking=true);
     Message* waitForSDOAnswer();
-    void debugPrint();
-    void debugPrintFlags();
     bool checkForConstant(std::string constName); // only for SDOs so far
     std::vector<std::string> parseFlags();
+
+    bool contains(std::string indexAlias); 
+    // check if PDO contains a given index from indices.csv
+    // (e.g. "position_actual_values")
+
+    uint32_t get(std::string indexAlias);
+    // return the value of a given index contained in a PDO
+    // (use Message::contains before to check if index is present in PDO)
+
     // private:
     uint8_t nodeID_; 
     std::string alias_; // entry into EDSDict, or PDODict, depending on message
     std::vector<uint32_t> values_;
 
+    std::chrono::microseconds timeStamp_;
+
     std::string createMsgHash();
     std::string createMsgHash(TPCANMsg m);
+    
+    // todo (optional): message caching; data changing of existing messages (for max. efficiency)
+    void debugPrint(); // only for debug/testing
+    void debugPrintFlags();
   };
-  // todo (optional): add a flag to openConnection + static member variable in Message that performs
-  // logging of in- and outgoing messages with timestamp
-  // todo (optional): message caching; data changing of existing messages (for max. efficiency)
+
   
   // wrapper functions for sending SDO, PDO, and NMT messages
   // sendSDO calls deliver the device response as return value: 
-  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param=""); // , bool writeMode=true);
+  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param="");
   void sendNMT(std::string param);
   void sendPDO(uint16_t deviceID, std::string alias, std::vector<uint32_t> data);
-  // todo: generic sendPDO
 
-  // only for testing purposes, print map of sent SDOs waiting for reply:
+  // only for debug/testing purposes:
   void debug_show_pendingSDOReplies(); 
 
   extern std::queue<Message> outgoingMsgQueue; // todo: only for debugging
   extern std::queue<Message> incomingPDOs;
+
 }
 
 

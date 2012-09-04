@@ -125,18 +125,19 @@ namespace canopen {
     return ok; // todo
   }
 
-  void sendPos(uint16_t deviceID, int pos) {  
+  /* void sendPos(uint16_t deviceID, double pos) {  
     std::vector<uint32_t> v;
     v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
     v.push_back(0);
     v.push_back(pos);
-    // Message("schunk_default_rPDO_12", v).writeCAN();  // works for PRH module
     Message(deviceID, "schunk_default_rPDO", v).writeCAN();
-  }
+    }*/
 
-  void sendPos1(uint16_t deviceID, int pos) {
-    std::vector<uint32_t> data = {eds.getConst("controlword", "start_homing|enable_ip_mode"),
-				  0, pos};
+  void sendPos(uint16_t deviceID, double pos) {
+    std::vector<uint32_t> data =
+      {eds.getConst("controlword", "start_homing|enable_ip_mode"),
+       0, 
+       rad2mdeg(pos) }; // Schunk has millidegrees as unit instead of rad
     sendPDO(deviceID, "schunk_default_rPDO", data);
   }
 

@@ -6,6 +6,20 @@
 #include "canopenmsg.h"
 
 namespace canopen {
+
+  uint32_t rad2mdeg(double phi) {
+    return static_cast<uint32_t>( round( phi/(2*M_PI)*360000.0 ) ); }
+  
+  /* std::vector<uint32_t> rad2mdeg(std::vector<double> phis) {
+    std::vector<uint32_t> alphas;
+    for (auto phi : phis)
+      alphas.push_back( rad2mdeg( phi ) );
+    return alphas;
+    }*/
+
+  double mdeg2rad(uint32_t alpha) {
+    return static_cast<double>( alpha/360000.0*2*M_PI ); }
+
   extern EDSDict eds;
   extern PDODict pdo;
 
@@ -40,6 +54,6 @@ namespace canopen {
   bool releaseBreak(uint16_t deviceID); 
   bool enableBreak(uint16_t deviceID);
 
-  void sendPos(uint16_t deviceID, int pos); // send position command as PDO (for IP mode)
+  void sendPos(uint16_t deviceID, double pos); // send position command as PDO (for IP mode)
 }
 #endif

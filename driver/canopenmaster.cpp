@@ -7,36 +7,9 @@
 #include "canopenmaster.h"
 
 namespace canopen {
-  
 
-  std::chrono::milliseconds controllerCycleDuration_msec(10);
+  std::chrono::milliseconds controllerCycleDuration_msec(8);
   std::map<std::string, Chain*> chainMap;
-
-  void homingCallback(std::string chainName) { 
-    chainMap[chainName]->chainHoming();
-  }
-  
-  void initCallback(std::string chainName) { 
-    chainMap[chainName]->chainInit();
-  }
-
-  void IPmodeCallback(std::string chainName) { 
-    chainMap[chainName]->chainIPmode();
-  }
-
-  void setPosCallback(std::string chainName, std::vector<int> positions) {
-    std::cout << "setposcallback: " << chainName << std::endl;
-    chainMap[chainName]->setPos(positions);
-  }
-
-  void jointVelocitiesCallback(std::string chainName, std::vector<int> velocities) {
-    std::cout << "jointvelocitiescallback: " << chainName << std::endl;
-    // chainMap[chainName]->setPos(positions);  todo!
-  }
-
-  std::vector<int> getCurrentPosCallback(std::string chainName) {
-    return chainMap[chainName]->getCurrentPos();
-  }
 
   void initChainMap(std::vector<ChainDescription> chainDesc) {
     for (auto c : chainDesc) {
@@ -88,9 +61,7 @@ namespace canopen {
 
       tic = std::chrono::high_resolution_clock::now();
     }
-
   }
-
 
   void initMasterThread() {
     using_master_thread = true;
@@ -98,7 +69,6 @@ namespace canopen {
     master_thread.detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-
 
   void incomingPDOProcessorFunc() {
     std::map<uint16_t, std::string> id2chain;
@@ -119,52 +89,11 @@ namespace canopen {
 	std::this_thread::sleep_for(std::chrono::milliseconds(5)); 
       }
     }
-
   }
-
 
   void initIncomingPDOProcessorThread() {
     std::thread incomingPDOProcessor_thread(incomingPDOProcessorFunc);
     incomingPDOProcessor_thread.detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
-
-
-
-
 }
-
-
-
-
-  
-// std::queue<std::vector<uint32_t> > outgoingPosQueue;
-// std::queue<std::vector<uint32_t> > incomingPosQueue;
-
-
-
-
-
-/*
-  int main() {
-  
-  std::vector<uint32_t> x {1,2,3};
-  std::vector<uint32_t> y {1,2,3,4};
-
-  outgoingPosQueue.push(x);
-  outgoingPosQueue.push(y);
-
-
-  while (outgoingPosQueue.size() > 0) {
-  std::cout << "hi" << std::endl;
-  std::vector<uint32_t> z = outgoingPosQueue.front();
-  outgoingPosQueue.pop();
-  std::cout << z.size() << std::endl;
-
-    
-
-  }
-
-  }
-  }
-*/

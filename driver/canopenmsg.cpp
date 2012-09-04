@@ -189,6 +189,9 @@ namespace canopen {
   // constructor for messages coming in from bus (TPCANRdMsg):
   Message::Message(TPCANRdMsg m) {  
     if (m.Msg.ID >= 0x180 && m.Msg.ID <= 0x4ff) { // incoming PDOs
+      // std::cout << "Time: " << dwTime_ << "  " << wUsec_ << std::endl;
+      timeStamp_ = std::chrono::microseconds(m.dwTime * 1000 + m.wUsec);
+
       alias_ = pdo.getAlias(m.Msg.ID);
 
       std::vector<uint16_t> indices = {0x180, 0x280, 0x380, 0x480};
@@ -375,6 +378,22 @@ namespace canopen {
     // delete m;  todo
     return m;
   } 
+
+  bool Message::contains(std::string indexAlias) {
+    std::vector<std::string> components = pdo.getComponents(alias_); 
+    auto it = std::find(components.begin(), components.end(), indexAlias);
+    return it != components.end();
+  }
+
+  uint32_t Message::get(std::string indexAlias) {
+    std::vector<std::string> components = pdo.getComponents(alias_); 
+    auto it = std::find(components.begin(), components.end(), indexAlias);
+    assert(it != components.end() && "In implementation, only use "
+	   "Message::get after having checked with Message::contains "
+	   "that an indexAlias is actually present!");
+    size_t ind = it - components.begin();
+    return values_[ind];
+  }
 
   // ------------- wrapper functions for sending SDO, PDO, and NMT messages: --
 

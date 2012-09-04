@@ -8,6 +8,7 @@
 #include <set>
 #include <map>
 #include <queue>
+#include <cassert>
 #include <regex>
 #include <pwd.h>
 #include <fstream>
@@ -17,7 +18,7 @@
 #define _USE_MATH_DEFINES
 
 namespace canopen {
-
+  
   // parsing chain and device descriptions:
   struct DeviceDescription {
     std::string name;
@@ -32,58 +33,72 @@ namespace canopen {
   void operator>> (const YAML::Node& node, ChainDescription& c);
   std::vector<ChainDescription> parseChainDescription(std::string filename);
 
-
-
   class Device {
   public:
-
-  Device(std::string alias, std::string CANbus, uint16_t CANid):
-    alias_(alias), CANbus_(CANbus), CANid_(CANid),
-      current_position_(0), current_velocity_(0), requested_position_(0) {
+    
+  Device(std::string alias, std::string CANbus, uint16_t CANid, uint32_t sync_deltaT_msec):
+    alias_(alias), CANbus_(CANbus), CANid_(CANid), sync_deltaT_msec_(sync_deltaT_msec),
+      actualPos_(0), actualVel_(0), desiredPos_(0), desiredVel_(0), 
+      timeStamp_( std::chrono::microseconds(0) ) {
     }
 
-    void deviceInit() { initDevice(CANid_); } // could have bool return value
+    void deviceInit() { initDevice(CANid_); }
+    // todo (optional): deviceInit could have bool return value
     void deviceHoming() { homing(CANid_); }
     void deviceIPmode() { enableIPmode(CANid_); }
-    void setPos(int position) { requested_position_ = position; }
-    int getCurrentPos() { return current_position_;  }
-    int getRequestedPos() { return requested_position_;  }
-    void updateStatusWithIncomingPDO(Message m);
-    // void pushVel(double vel);
-    // void sendVel();
-    // void sendSDO();
-    // inline bool sendVelQueueEmpty() { return(sendVel_queue_.empty()); }
+    
+    // Note: in IP mode, a desired velocity determines the desired position
+    // and vice versa, because the sync frequency is considered fixed
+    // and the device tries to reach a desired position within a
+    // given SYNC cycle
+    void setPos(double pos);
+    void setVel(double vel);
 
-    // private:
+    double getActualPos() { return actualPos_; } 
+    double getDesiredPos() { return desiredPos_; } 
+    double getActualVel() { return actualVel_; } 
+    double getDesiredVel() { return desiredVel_; } 
+
+    void updateStatusWithIncomingPDO(Message m);
+
+    // todo: private:
+    void updateActualPosAndVel(double newPos, std::chrono::microseconds newTimeStamp);
+
     std::string alias_;
     std::string CANbus_;
     uint16_t CANid_;
-    int requested_position_;
-    double current_position_; // rad
-    double current_velocity_; // rad/s
-    // std::queue<double> sendVel_queue_;
-    // std::queue<TPCANMsg> sendSDO_queue_;
+    uint32_t sync_deltaT_msec_; // time between two SYNCs in msec
+
+    double actualPos_; // unit = rad
+    double desiredPos_; // unit = rad
+    double actualVel_; // unit = rad/sec
+    double desiredVel_; // unit = rad/sec
+    // timestamp of latest received CAN message (unit = microsec):
+    std::chrono::microseconds timeStamp_; 
   };
 
   class Chain {
   public:
-    Chain(ChainDescription chainDesc);
+    Chain(ChainDescription chainDesc, uint32_t sync_deltaT_msec);
     void chainInit();
     void chainHoming();
     void chainIPmode();
     std::vector<uint16_t> getDeviceIDs();
-    void setPos(std::vector<int> positions);
     void sendPos();
-    void updateStatusWithIncomingPDO(Message m);                              // todo: save deviceID lookup by using a map
+    void updateStatusWithIncomingPDO(Message m); 
+    // ↑ todo: save deviceID lookup by using a map
 
-    std::vector<int> getRequestedPos();
-    std::vector<int> getCurrentPos();
-
+    std::vector<double> getDesiredPos();  // [rad]
+    std::vector<double> getActualPos();  // [rad]
+    std::vector<double> getDesiredVel(); // [rad/sec]
+    std::vector<double> getActualVel(); // [rad/sec]
+    void setPos(std::vector<double> positions); // [rad]
+    void setVel(std::vector<double> velocities); // [rad/sec]
     bool sendPosActive_;
-                                                                                  // private:
+    // private:
     std::string alias_;
-    std::vector<Device> devices_;                                              // todo: this should be a map: int CANid -> device object
-
+    std::vector<Device> devices_; 
+    // ↑ todo: this should be a map: int CANid -> device object
   };
 
 }

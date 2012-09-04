@@ -20,10 +20,10 @@ void clientFunc() {
   uint32_t pos = 0;
   for (int i=0; i<3600; i++) {
     canopen::setPosCallback("chain1", {pos});
-    pos += 100;
+    pos += 250;
     // this should match the controller_cycle_duration and in practice would be
     // the feedback loop, cf. ROS demos
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }
 
   // std::this_thread::sleep_for(std::chrono::seconds(1));
