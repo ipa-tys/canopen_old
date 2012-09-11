@@ -8,13 +8,13 @@
 
 namespace canopen {
 
-  std::chrono::milliseconds controllerCycleDuration_msec(8);
+  std::chrono::milliseconds sync_deltaT_msec(10);
   std::map<std::string, Chain*> chainMap;
 
   void initChainMap(std::vector<ChainDescription> chainDesc) {
     for (auto c : chainDesc) {
       std::cout << "init chain: " << c.name << std::endl;
-      chainMap[c.name] = new Chain(c);
+      chainMap[c.name] = new Chain(c, sync_deltaT_msec);
     }
   }
 
@@ -27,6 +27,9 @@ namespace canopen {
     while (true) {
       tic = std::chrono::high_resolution_clock::now();
 
+
+      std::cout << "SYNC active? " << any_SendPosActive << std::endl;
+
       any_SendPosActive = false;
       for (auto chain : chainMap) 
 	if (chain.second->sendPosActive_)
@@ -36,7 +39,7 @@ namespace canopen {
 	noSyncYet = false;
 	for (int i=0; i<2; i++) {
 	  sendSync();
-	  std::this_thread::sleep_for(controllerCycleDuration_msec);
+	  std::this_thread::sleep_for(sync_deltaT_msec);
 	}
       }
 
@@ -50,7 +53,7 @@ namespace canopen {
 	sendSync();
       }
 
-      while (std::chrono::high_resolution_clock::now() < tic + controllerCycleDuration_msec) {
+      while (std::chrono::high_resolution_clock::now() < tic + sync_deltaT_msec) {
 	// fetch a message from the outgoingMsgQueue and send to CAN bus:
 	if (outgoingMsgQueue.size() > 0) {
 	  outgoingMsgQueue.front().writeCAN(true); 
@@ -59,6 +62,7 @@ namespace canopen {
 	std::this_thread::sleep_for(std::chrono::microseconds(10)); 
       }
 
+      std::cout << ((std::chrono::high_resolution_clock::now()-tic)-sync_deltaT_msec).count() << std::endl;
       tic = std::chrono::high_resolution_clock::now();
     }
   }

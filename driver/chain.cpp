@@ -53,8 +53,8 @@ namespace canopen {
   }
 
   void Device::updateStatusWithIncomingPDO(Message m) {
-    if (m.contains("position_actual_values")) 
-      updateActualPosAndVel( mdeg2rad( m.get("position_actual_values") ),
+    if (m.contains("position_actual_value")) 
+      updateActualPosAndVel( mdeg2rad( m.get("position_actual_value") ),
 			     m.timeStamp_);
 
     // Note: you can add any other CANopen indices here that should be
@@ -63,18 +63,18 @@ namespace canopen {
   }
 
   void Device::setPos(double pos) {
+    desiredVel_ = (pos - desiredPos_) / (sync_deltaT_msec_.count() / 1000.0);
     desiredPos_ = pos;
-    desiredVel_ = (pos - desiredPos_) / (sync_deltaT_msec_ / 1000.0);
   }
 
   void Device::setVel(double vel) {
     desiredVel_ = vel;
-    desiredPos_ = desiredPos_ + vel * (sync_deltaT_msec_ / 1000.0);
+    desiredPos_ = desiredPos_ + vel * (sync_deltaT_msec_.count() / 1000.0);
   }
 
   // ---------- Chain:
 
-  Chain::Chain(ChainDescription chainDesc, uint32_t sync_deltaT_msec):
+  Chain::Chain(ChainDescription chainDesc, std::chrono::milliseconds sync_deltaT_msec):
     alias_(chainDesc.name), sendPosActive_(false) {
     for (auto d : chainDesc.devices)
       devices_.push_back( Device(d.name, d.bus, d.id, sync_deltaT_msec) );

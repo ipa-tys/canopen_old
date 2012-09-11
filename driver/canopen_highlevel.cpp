@@ -28,6 +28,11 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
+  double getPos(uint16_t deviceID) {
+    Message* m = sendSDO(deviceID, "position_actual_value");
+      return mdeg2rad( m->values_[0] );
+  }
+
   void faultReset(uint16_t deviceID) {
     // sendSDO(deviceID, "controlword", "fault_reset");
     sendSDO(deviceID, "controlword", "reset_fault_0");
@@ -93,6 +98,25 @@ namespace canopen {
     return sendSDO(deviceID, "statusword")->checkForConstant("drive_referenced");
   }
 
+  void moveUntilUserInterrupt(uint16_t deviceID, int direction=1) { // todo: direction->speed
+    bool pressed = false;
+    std::thread keyThread([&]() { std::string tt; std::getline(std::cin, tt); pressed=true; });
+    keyThread.detach();
+    canopen::homing(deviceID);
+    canopen::enableIPmode(deviceID);
+    double pos = 0;
+    canopen::sendSync(10);
+    canopen::sendSync(10);
+    while (!pressed) {
+      canopen::sendPos(deviceID, pos);
+      pos += direction * M_PI / 3600.0;
+      canopen::sendSync(10);
+    }
+    canopen::homing(deviceID);
+    // canopen::enableBreak(deviceID);
+    // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  }
+
   bool driveMode(uint16_t deviceID, std::string mode) {
     sendSDO(deviceID, "modes_of_operation", mode);
     return sendSDO(deviceID, "modes_of_operation_display")->checkForConstant(mode);
@@ -131,13 +155,13 @@ namespace canopen {
     v.push_back(0);
     v.push_back(pos);
     Message(deviceID, "schunk_default_rPDO", v).writeCAN();
-    }*/
+    } */
 
-  void sendPos(uint16_t deviceID, double pos) {
+  void sendPos(uint16_t deviceID, double pos_rad) {
     std::vector<uint32_t> data =
       {eds.getConst("controlword", "start_homing|enable_ip_mode"),
        0, 
-       rad2mdeg(pos) }; // Schunk has millidegrees as unit instead of rad
+       rad2mdeg(pos_rad) }; // Schunk has millidegrees as unit instead of rad
     sendPDO(deviceID, "schunk_default_rPDO", data);
   }
 

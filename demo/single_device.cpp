@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
   } 
- 
+
   // performing homing of device:
   if (!canopen::homing(deviceID)) {
     std::cout << "Homing was not successful; aborting." << std::endl;
@@ -44,22 +44,28 @@ int main(int argc, char *argv[]) {
   }
 
   // move a bit in IP mode:
-  canopen::sendSync(10);
-  canopen::sendSync(10);
-  int pos = 0;
-  for (int j=0; j<2; j++) {
-    for (int i=0; i<500; i++) {
-      canopen::sendPos(deviceID, pos);
-      pos += 100;
-      canopen::sendSync(10);
-    }
-    for (int i=500; i>0; i--) {
-      canopen::sendPos(deviceID, pos);
-      pos -= 100;
-      canopen::sendSync(10);
-    }
+  double step_size = 2*M_PI / 2000.0;
+  double pos = 0;
+  /* for (int i=0; i<10; i++) {
+    canopen::sendPos(deviceID, pos);
+    canopen::sendSync(10);
+    } */
+
+  for (int i=0; i<2000; i++) {
+    canopen::sendPos(deviceID, pos);
+    pos += step_size;
+    canopen::sendSync(10);
+  }
+  std::cout << pos << std::endl;
+
+  for (int i=2000; i>0; i--) {
+    canopen::sendPos(deviceID, pos);
+    pos -= step_size;
+    canopen::sendSync(10);
   }
 
+  std::cout << pos << std::endl;
+  
   // shutdown device and connection:
   canopen::enableBreak(deviceID);
   canopen::shutdownDevice(deviceID);

@@ -36,8 +36,10 @@ namespace canopen {
   class Device {
   public:
     
-  Device(std::string alias, std::string CANbus, uint16_t CANid, uint32_t sync_deltaT_msec):
-    alias_(alias), CANbus_(CANbus), CANid_(CANid), sync_deltaT_msec_(sync_deltaT_msec),
+  Device(std::string alias, std::string CANbus, uint16_t CANid,
+	 std::chrono::milliseconds sync_deltaT_msec):
+    alias_(alias), CANbus_(CANbus), CANid_(CANid),
+      sync_deltaT_msec_(sync_deltaT_msec),
       actualPos_(0), actualVel_(0), desiredPos_(0), desiredVel_(0), 
       timeStamp_( std::chrono::microseconds(0) ) {
     }
@@ -67,7 +69,7 @@ namespace canopen {
     std::string alias_;
     std::string CANbus_;
     uint16_t CANid_;
-    uint32_t sync_deltaT_msec_; // time between two SYNCs in msec
+    std::chrono::milliseconds sync_deltaT_msec_; // time between two SYNCs in msec
 
     double actualPos_; // unit = rad
     double desiredPos_; // unit = rad
@@ -79,7 +81,7 @@ namespace canopen {
 
   class Chain {
   public:
-    Chain(ChainDescription chainDesc, uint32_t sync_deltaT_msec);
+    Chain(ChainDescription chainDesc, std::chrono::milliseconds sync_deltaT_msec);
     void chainInit();
     void chainHoming();
     void chainIPmode();

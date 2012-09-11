@@ -12,18 +12,18 @@ namespace canopen {
   void initIncomingPDOProcessorThread();
   void incomingPDOProcessorFunc();
 
-  void initCallback(std::string chainName) { chainMap[chainName]->chainInit(); }
-  void homingCallback(std::string chainName) { chainMap[chainName]->chainHoming(); }
-  void IPmodeCallback(std::string chainName) { chainMap[chainName]->chainIPmode(); }
+  inline void initCallback(std::string chainName) { chainMap[chainName]->chainInit(); }
+  inline void homingCallback(std::string chainName) { chainMap[chainName]->chainHoming(); }
+  inline void IPmodeCallback(std::string chainName) { chainMap[chainName]->chainIPmode(); }
 
-  void setPosCallback(std::string chainName, std::vector<double> positions) {
+  inline void setPosCallback(std::string chainName, std::vector<double> positions) {
     chainMap[chainName]->setPos(positions); }
 
-  void setVelCallback(std::string chainName, std::vector<double> velocities) {
+  inline void setVelCallback(std::string chainName, std::vector<double> velocities) {
     chainMap[chainName]->setVel(velocities); }
 
-  std::vector<double> getActualPosCallback(std::string chainName) {
-    return chainMap[chainName]->getCurrentPos(); }
+  inline std::vector<double> getActualPosCallback(std::string chainName) {
+    return chainMap[chainName]->getActualPos(); }
 
   // void jointVelocitiesCallback(std::string chainName, std::vector<int> velocities);
   /* void jointVelocitiesCallback(std::string chainName, std::vector<int> velocities) {

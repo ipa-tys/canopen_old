@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
   canopen::initListenerThread();    
     
   // put NMT and 402 state machines for devices  to operational:
-  for (auto it : deviceIDs) canopen::faultReset(it);
+  // for (auto it : deviceIDs) canopen::faultReset(it);
   canopen::initNMT();
   for (auto it : deviceIDs) 
     if (!canopen::initDevice(it)) {
@@ -36,13 +36,25 @@ int main(int argc, char *argv[]) {
     } 
   
   // performing homing of devices:
-  for (auto it : deviceIDs) {
+  /* for (auto it : deviceIDs) {
     std::cout << "homing device: " << it << std::endl;
     if (!canopen::homing(it)) {
       std::cout << "Homing was not successful; aborting." << std::endl;
       return -1;
     }  
-  }  
+  }  */
+
+  
+  // move a bit in IP mode:
+  double step_size = 2 * M_PI / 8000.0;
+  // double pos = 0;
+  std::vector<double> positions;
+  for (auto it : deviceIDs) positions.push_back( canopen::getPos(it) );
+
+  for (auto it : positions)
+    std::cout << it << "   ";
+  std::cout << std::endl;
+
 
   // put devices into interpolated_position_mode:
   for (auto it : deviceIDs)
@@ -52,19 +64,23 @@ int main(int argc, char *argv[]) {
       return -1;
     }
   
-  // move a bit in IP mode:
   canopen::sendSync(10);
   canopen::sendSync(10);
-  int pos = 0;
+
+
   for (int j=0; j<10; j++) {
-    for (int i=0; i<=300; i++) {
-      for (auto it : deviceIDs) canopen::sendPos(it, pos);
-      pos += 35;
+    for (int i=0; i<=100; i++) {
+      for (int i=0; i<deviceIDs.size(); i++) {
+	canopen::sendPos(deviceIDs[i], positions[i]);
+	positions[i] += step_size;
+      }
       canopen::sendSync(10);
     }
-    for (int i=300; i>0; i--) {
-      for (auto it : deviceIDs) canopen::sendPos(it, pos);
-      pos += 35;
+    for (int i=100; i>0; i--) {
+      for (int i=0; i<deviceIDs.size(); i++) {
+	canopen::sendPos(deviceIDs[i], positions[i]);
+	positions[i] -= step_size;
+      }
       canopen::sendSync(10);
     }   
   }

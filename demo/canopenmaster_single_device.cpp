@@ -13,18 +13,53 @@
 
 void clientFunc() { 
   canopen::initCallback("chain1");
-  canopen::homingCallback("chain1");
+  // canopen::homingCallback("chain1");
   canopen::IPmodeCallback("chain1");
-  std::this_thread::sleep_for(std::chrono::seconds(4));
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
     
-  uint32_t pos = 0;
-  for (int i=0; i<3600; i++) {
-    canopen::setPosCallback("chain1", {pos});
-    pos += 250;
+  // std::vector<double> positions = canopen::getActualPosCallback("chain1");
+  
+  double step_size = 2 * M_PI / 2000.0;
+  std::vector<double> actualPos;
+  std::vector<double> positions;
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  // positions = canopen::chainMap["chain1"]->getActualPos();
+  positions = canopen::getActualPosCallback("chain1");
+
+  for (int i=0; i<2000; i++) {
+    canopen::setPosCallback("chain1", positions);
+    positions[0] += step_size;
+    actualPos = canopen::getActualPosCallback("chain1");
+
+    std::cout << "Positions: ";
+    for (auto it : positions)
+      std::cout << it << "  ";
+    std::cout << std::endl;
+    
     // this should match the controller_cycle_duration and in practice would be
     // the feedback loop, cf. ROS demos
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    } 
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(4000));
+
+    for (int i=0; i<2000; i++) {
+    canopen::setPosCallback("chain1", positions);
+    positions[0] -= step_size;
+    actualPos = canopen::getActualPosCallback("chain1");
+
+    std::cout << "Positions: ";
+    for (auto it : positions)
+      std::cout << it << "  ";
+    std::cout << std::endl;
+    
+    // this should match the controller_cycle_duration and in practice would be
+    // the feedback loop, cf. ROS demos
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    } 
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
   // std::this_thread::sleep_for(std::chrono::seconds(1));
   // canopen::homingCallback("chain1");

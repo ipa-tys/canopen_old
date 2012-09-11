@@ -12,9 +12,21 @@
 // approach but using ROS interprocess communication via services and
 // publishers/subscribers.
 
+void printPositions(std::vector<double> actualPos, std::vector<double> desiredPos) {
+  std::cout << "Actual: ";
+  for (auto it : actualPos)
+    std::cout << it << "  ";
+  std::cout << std::endl;
+
+  std::cout << "Desired: ";
+  for (auto it : desiredPos)
+    std::cout << it << "  ";
+  std::cout << std::endl;
+}
+
 void clientFunc() { 
   canopen::initCallback("arm1");
-  canopen::homingCallback("arm1");
+  // canopen::homingCallback("arm1");
   canopen::IPmodeCallback("arm1");
 
   for (int i=0; i<8; i++) {
@@ -22,55 +34,29 @@ void clientFunc() {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
-  std::vector<int32_t> current_pos = canopen::getCurrentPosCallback("arm1");
-  std::vector<int32_t> request_pos = current_pos;
-  // std::vector<int32_t> request_pos = {0,0,0,0,0,0};
+  std::vector<double> actualPos = canopen::getActualPosCallback("arm1");
+  std::vector<double> desiredPos = actualPos;
 
-  std::vector<int> incr = {20,20,20,20,20,20};
+  double step_size = 2 * M_PI / 8000.0;
 
-  for (int i=0; i<=10000; i++) {
-
-    current_pos = canopen::getCurrentPosCallback("arm1");
-    // std::cout << incr << std::endl;
-    
-    for (int k=0; k<current_pos.size(); k++) {
-      if  (current_pos[k] <= -300 || current_pos[k] > 7000) {
-	incr[k] = 20;
-      } else  {
-	incr[k] = -20;
-      } 
-
-      if (abs(request_pos[k] - current_pos[k]) > 20000) {
-	request_pos[k] = current_pos[k] - incr[k]/2;
-      } else if (abs(request_pos[k] - current_pos[k]) > 200) {
-	request_pos[k] = request_pos[k] + incr[k]/2;
-      } else {
-	request_pos[k] = request_pos[k] + incr[k];
-      }
+  //  for (int j=0; j<10; j++) {
+    for (int i=0; i<=500; i++) {
+      actualPos = canopen::getActualPosCallback("arm1");
+      canopen::setPosCallback("arm1", desiredPos);
+      printPositions(actualPos, desiredPos);
+      desiredPos[0] += step_size;
+      for (int k=1; k<desiredPos.size(); k++)
+	desiredPos[k] = actualPos[k];
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-
-    std::cout << "CURRENT POS: ";
-    for (auto it : current_pos) 
-      std::cout << it << "  ";
-    std::cout << std::endl;
     
-    std::cout << "REQUEST POS: ";	
-    for (int k=0; k<request_pos.size(); k++) {
-      std::cout << request_pos[k] << "  ";
-    }
-    std::cout << std::endl;
-
-    std::cout << "INCR: ";
-    for (auto it : incr) 
-      std::cout << it << "  ";
-    std::cout << std::endl;
-
-    canopen::setPosCallback("arm1", request_pos);
-    // this should match the controller_cycle_duration and in practice would be
-    // the feedback loop, cf. ROS demos
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
-  
+    /* for (int i=100; i>0; i--) {
+      canopen::setPosCallback("arm1", desiredPos);
+      // for (int k=0; k<desiredPos.size(); k++)
+	desiredPos[0] -= step_size;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }  */ 
+    // }
 
   while (true) {}
 }
