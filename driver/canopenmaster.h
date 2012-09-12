@@ -25,6 +25,17 @@ namespace canopen {
   inline std::vector<double> getActualPosCallback(std::string chainName) {
     return chainMap[chainName]->getActualPos(); }
 
+  inline std::vector<double> getDesiredPosCallback(std::string chainName) {
+    return chainMap[chainName]->getDesiredPos(); }
+
+  inline std::vector<double> getActualVelCallback(std::string chainName) {
+    return chainMap[chainName]->getActualVel(); }
+  
+  inline std::vector<double> getDesiredVelCallback(std::string chainName) {
+    return chainMap[chainName]->getDesiredVel(); }
+
+    
+
   // void jointVelocitiesCallback(std::string chainName, std::vector<int> velocities);
   /* void jointVelocitiesCallback(std::string chainName, std::vector<int> velocities) {
     std::cout << "jointvelocitiescallback: " << chainName << std::endl;

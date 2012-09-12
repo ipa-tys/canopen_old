@@ -28,7 +28,7 @@ namespace canopen {
       tic = std::chrono::high_resolution_clock::now();
 
 
-      std::cout << "SYNC active? " << any_SendPosActive << std::endl;
+      // std::cout << "SYNC active? " << any_SendPosActive << std::endl;
 
       any_SendPosActive = false;
       for (auto chain : chainMap) 
@@ -62,7 +62,7 @@ namespace canopen {
 	std::this_thread::sleep_for(std::chrono::microseconds(10)); 
       }
 
-      std::cout << ((std::chrono::high_resolution_clock::now()-tic)-sync_deltaT_msec).count() << std::endl;
+      // std::cout << ((std::chrono::high_resolution_clock::now()-tic)-sync_deltaT_msec).count() << std::endl;
       tic = std::chrono::high_resolution_clock::now();
     }
   }

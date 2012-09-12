@@ -63,13 +63,13 @@ namespace canopen {
   }
 
   void Device::setPos(double pos) {
-    desiredVel_ = (pos - desiredPos_) / (sync_deltaT_msec_.count() / 1000.0);
+    desiredVel_ = (pos - actualPos_) / (sync_deltaT_msec_.count() / 1000.0);
     desiredPos_ = pos;
   }
 
   void Device::setVel(double vel) {
     desiredVel_ = vel;
-    desiredPos_ = desiredPos_ + vel * (sync_deltaT_msec_.count() / 1000.0);
+    desiredPos_ = actualPos_ + vel * (sync_deltaT_msec_.count() / 1000.0);
   }
 
   // ---------- Chain:
