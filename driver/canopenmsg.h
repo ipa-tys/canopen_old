@@ -104,6 +104,8 @@ namespace canopen {
   // wrapper functions for sending SDO, PDO, and NMT messages
   // sendSDO calls deliver the device response as return value: 
   Message* sendSDO(uint16_t deviceID, std::string alias, std::string param="");
+  Message* sendSDO(uint16_t deviceID, std::string alias, uint32_t value);
+
   void sendNMT(std::string param);
   void sendPDO(uint16_t deviceID, std::string alias, std::vector<uint32_t> data);
 

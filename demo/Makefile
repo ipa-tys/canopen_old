@@ -1,4 +1,5 @@
-all: getpos reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
+all: getpos reference homing single_device canopenmaster_single_device 
+# all: getpos reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
 
 getpos: getpos.o
 	g++ getpos.o -o getpos -lpthread -lcanopen -lpcan

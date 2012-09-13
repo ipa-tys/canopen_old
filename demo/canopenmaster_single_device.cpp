@@ -12,7 +12,8 @@
 // publishers/subscribers.
 
 void clientFunc() { 
-  canopen::initCallback("chain1");
+
+  canopen::initCallback("chain1", canopen::sync_deltaT_msec);
   // canopen::homingCallback("chain1");
   canopen::IPmodeCallback("chain1");
   std::this_thread::sleep_for(std::chrono::milliseconds(300));
@@ -39,7 +40,7 @@ void clientFunc() {
     
     // this should match the controller_cycle_duration and in practice would be
     // the feedback loop, cf. ROS demos
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(canopen::sync_deltaT_msec);
     } 
 
   std::this_thread::sleep_for(std::chrono::milliseconds(4000));
@@ -56,7 +57,7 @@ void clientFunc() {
     
     // this should match the controller_cycle_duration and in practice would be
     // the feedback loop, cf. ROS demos
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(canopen::sync_deltaT_msec);
     } 
 
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
@@ -66,8 +67,17 @@ void clientFunc() {
   while (true) {}
 }
 
-int main() {
+int main(int argc, char *argv[]) {
   canopen::using_master_thread = true;
+
+  if (argc != 2) {
+    std::cout << "sync rate must be given as argument!" << std::endl;
+    return -1;
+  }
+  
+  int sync_deltaT_msec_int = std::stoi(std::string(argv[1]));
+  canopen::sync_deltaT_msec = std::chrono::milliseconds(sync_deltaT_msec_int);
+  std::cout << "sync rate: " << sync_deltaT_msec_int << std::endl;
   // todo: canopen::parseChainDesc(filename);
   // canopen::initChainMap("/home/tys/git/other/canopen/demo/single_device.csv");
 

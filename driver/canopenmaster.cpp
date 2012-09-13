@@ -8,7 +8,7 @@
 
 namespace canopen {
 
-  std::chrono::milliseconds sync_deltaT_msec(10);
+  std::chrono::milliseconds sync_deltaT_msec;
   std::map<std::string, Chain*> chainMap;
 
   void initChainMap(std::vector<ChainDescription> chainDesc) {
@@ -24,6 +24,9 @@ namespace canopen {
     auto tic = std::chrono::high_resolution_clock::now();
     bool any_SendPosActive;
     bool noSyncYet = true;
+
+    std::cout << "anysendposactive? " << any_SendPosActive << std::endl;
+
     while (true) {
       tic = std::chrono::high_resolution_clock::now();
 

@@ -47,12 +47,22 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
 
-  bool initDevice(uint16_t deviceID) {
+  void setSyncInterval(uint16_t deviceID,
+		       std::chrono::milliseconds sync_deltaT_msec) {
+    sendSDO(deviceID, "ip_time_index", "milliseconds");
+    uint32_t dt = static_cast<uint32_t>( sync_deltaT_msec.count() );
+    std::cout << "Sync interval: " << dt << std::endl;
+    sendSDO(deviceID, "ip_time_units", dt);
+  }
+
+  bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec) {
     sendSDO(deviceID, "controlword", "sm_shutdown");
     while (!sendSDO(deviceID, "statusword")->checkForConstant("ready_to_switch_on")) {
       std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
+
+    setSyncInterval(deviceID, sync_deltaT_msec);
 
     sendSDO(deviceID, "controlword", "sm_switch_on");
     while (!sendSDO(deviceID, "statusword")->checkForConstant("switched_on")) {

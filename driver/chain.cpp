@@ -80,9 +80,9 @@ namespace canopen {
       devices_.push_back( Device(d.name, d.bus, d.id, sync_deltaT_msec) );
   }
 
-  void Chain::chainInit() {
+  void Chain::chainInit(std::chrono::milliseconds sync_deltaT_msec) {
     for (auto device : devices_)
-      device.deviceInit();
+      device.deviceInit(sync_deltaT_msec);
   }
 
   void Chain::chainHoming() {

@@ -5,6 +5,7 @@
 
 namespace canopen {
   extern std::map<std::string, Chain*> chainMap;
+  extern   std::chrono::milliseconds sync_deltaT_msec;
 
   void initChainMap(std::vector<ChainDescription> chainDesc);
   void initMasterThread();
@@ -12,7 +13,10 @@ namespace canopen {
   void initIncomingPDOProcessorThread();
   void incomingPDOProcessorFunc();
 
-  inline void initCallback(std::string chainName) { chainMap[chainName]->chainInit(); }
+  inline void initCallback(std::string chainName,
+			   std::chrono::milliseconds sync_deltaT_msec) {
+    chainMap[chainName]->chainInit(sync_deltaT_msec); }
+
   inline void homingCallback(std::string chainName) { chainMap[chainName]->chainHoming(); }
   inline void IPmodeCallback(std::string chainName) { chainMap[chainName]->chainIPmode(); }
 

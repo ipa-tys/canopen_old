@@ -44,7 +44,8 @@ namespace canopen {
       timeStamp_( std::chrono::microseconds(0) ) {
     }
 
-    void deviceInit() { initDevice(CANid_); }
+    void deviceInit(std::chrono::milliseconds sync_deltaT_msec) {
+      initDevice(CANid_, sync_deltaT_msec); }   // sync_deltaT_msec_
     // todo (optional): deviceInit could have bool return value
     void deviceHoming() { homing(CANid_); }
     void deviceIPmode() { enableIPmode(CANid_); }
@@ -82,7 +83,7 @@ namespace canopen {
   class Chain {
   public:
     Chain(ChainDescription chainDesc, std::chrono::milliseconds sync_deltaT_msec);
-    void chainInit();
+    void chainInit(std::chrono::milliseconds sync_deltaT_msec);
     void chainHoming();
     void chainIPmode();
     std::vector<uint16_t> getDeviceIDs();

@@ -410,6 +410,14 @@ namespace canopen {
     return reply;
   }
 
+  Message* sendSDO(uint16_t deviceID, std::string alias, uint32_t value) {
+    Message* m = new Message(deviceID, alias, value);
+    m->writeCAN();
+    Message* reply = m->waitForSDOAnswer();
+    delete m;
+    return reply;
+  }
+
   void sendNMT(std::string param) {
     Message(0, "NMT", eds.getConst("NMT", param)).writeCAN();
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); 

@@ -32,7 +32,8 @@ namespace canopen {
 
   void faultReset(uint16_t deviceID);
   void initNMT();
-  bool initDevice(uint16_t deviceID); // init NMT and 402 state machines
+  void setSyncInterval(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec);
+  bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec); // init NMT and 402 state machines
   bool shutdownDevice(uint16_t deviceID); // init NMT and 402 state machines
   void sendSync(uint32_t sleepTime_msec=0); // sends a SYNC (must be done in regular time intervals)
 

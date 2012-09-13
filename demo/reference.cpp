@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   // put NMT and 402 state machines for device  to operational:
   canopen::faultReset(deviceID);
   canopen::initNMT();
-  if (!canopen::initDevice(deviceID)) { 
+  if (!canopen::initDevice(deviceID, std::chrono::milliseconds(10))) { 
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
   } 
