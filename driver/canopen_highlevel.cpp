@@ -168,7 +168,7 @@ namespace canopen {
     } */
 
   void sendPos(uint16_t deviceID, double pos_rad) {
-    std::vector<uint32_t> data =
+    std::vector<int32_t> data =
       {eds.getConst("controlword", "start_homing|enable_ip_mode"),
        0, 
        rad2mdeg(pos_rad) }; // Schunk has millidegrees as unit instead of rad

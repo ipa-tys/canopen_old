@@ -7,8 +7,8 @@
 
 namespace canopen {
 
-  inline uint32_t rad2mdeg(double phi) {
-    return static_cast<uint32_t>( round( phi/(2*M_PI)*360000.0 ) ); }
+  inline int32_t rad2mdeg(double phi) {
+    return static_cast<int32_t>( round( phi/(2*M_PI)*360000.0 ) ); }
   
   /* std::vector<uint32_t> rad2mdeg(std::vector<double> phis) {
     std::vector<uint32_t> alphas;
@@ -17,7 +17,7 @@ namespace canopen {
     return alphas;
     }*/
 
-  inline double mdeg2rad(uint32_t alpha) {
+  inline double mdeg2rad(int32_t alpha) {
     return static_cast<double>( static_cast<double>(alpha)/360000.0*2*M_PI ); }
 
   extern EDSDict eds;

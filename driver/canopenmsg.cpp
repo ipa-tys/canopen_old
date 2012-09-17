@@ -183,7 +183,7 @@ namespace canopen {
   }
 
   // user-constructed PDO message:
-  Message::Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values):
+  Message::Message(uint8_t nodeID, std::string alias, std::vector<int32_t> values):
     nodeID_(nodeID), alias_(alias), values_(values) {}
 
   // constructor for messages coming in from bus (TPCANRdMsg):
@@ -206,10 +206,13 @@ namespace canopen {
       int pos = 0;
       for (int i=0; i<components.size(); i++) {
 	values_.push_back(0);
+	uint32_t ttemp = 0;
 	for (int j=0; j<lengths[i]; j++) {
-	  values_[i] += (static_cast<uint32_t>(m.Msg.DATA[pos]) << (j*8));
+	  ttemp += (static_cast<uint32_t>(m.Msg.DATA[pos]) << (j*8));
 	  pos++;
 	}
+	int32_t *ittemp = reinterpret_cast<int32_t*>(&ttemp); // todo: mem cleanup
+	values_[i] = *ittemp;
       }
       incomingPDOs.push(*this);
       // std::cout << "incomingPDOs queue size: " << incomingPDOs.size() << std::endl;
@@ -423,7 +426,7 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
   }
 
-  void sendPDO(uint16_t deviceID, std::string alias, std::vector<uint32_t> data) {
+  void sendPDO(uint16_t deviceID, std::string alias, std::vector<int32_t> data) {
     Message(deviceID, alias, data).writeCAN();
   }
 

@@ -64,7 +64,7 @@ namespace canopen {
     Message(uint8_t nodeID, std::string alias, uint32_t value=0);
     // user-constructed non-PDO message
     
-    Message(uint8_t nodeID, std::string alias, std::vector<uint32_t> values);
+    Message(uint8_t nodeID, std::string alias, std::vector<int32_t> values);
     // user-constructed PDO message
     
     void writeCAN(bool directlyToCANBus=false); 
@@ -88,7 +88,7 @@ namespace canopen {
     // private:
     uint8_t nodeID_; 
     std::string alias_; // entry into EDSDict, or PDODict, depending on message
-    std::vector<uint32_t> values_;
+    std::vector<int32_t> values_;
 
     std::chrono::microseconds timeStamp_;
 
@@ -107,7 +107,7 @@ namespace canopen {
   Message* sendSDO(uint16_t deviceID, std::string alias, uint32_t value);
 
   void sendNMT(std::string param);
-  void sendPDO(uint16_t deviceID, std::string alias, std::vector<uint32_t> data);
+  void sendPDO(uint16_t deviceID, std::string alias, std::vector<int32_t> data);
 
   // only for debug/testing purposes:
   void debug_show_pendingSDOReplies(); 
