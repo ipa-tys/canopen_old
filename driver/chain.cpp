@@ -45,6 +45,9 @@ namespace canopen {
     if (timeStamp_ != std::chrono::microseconds(0)) {
       std::chrono::microseconds deltaTime( newTimeStamp - timeStamp_ );
       double deltaTime_double = static_cast<double>(deltaTime.count()) * 0.000001;
+
+      std::cout << "Deltatime: " << deltaTime_double << std::endl;
+
       actualVel_ = (newPos - actualPos_) / deltaTime_double;
       std::cout << deltaTime_double << "   " << newPos << "  " << actualVel_ << std::endl;
     }
@@ -69,7 +72,7 @@ namespace canopen {
 
   void Device::setVel(double vel) {
     desiredVel_ = vel;
-    desiredPos_ = actualPos_ + vel * (sync_deltaT_msec_.count() / 1000.0);
+    desiredPos_ = desiredPos_ + vel * (sync_deltaT_msec_.count() / 1000.0);
   }
 
   // ---------- Chain:
@@ -83,6 +86,7 @@ namespace canopen {
   void Chain::chainInit(std::chrono::milliseconds sync_deltaT_msec) {
     for (auto device : devices_)
       device.deviceInit(sync_deltaT_msec);
+    sendPosActive_ = true;
   }
 
   void Chain::chainHoming() {

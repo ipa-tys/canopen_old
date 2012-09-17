@@ -18,7 +18,7 @@ namespace canopen {
     }*/
 
   inline double mdeg2rad(uint32_t alpha) {
-    return static_cast<double>( alpha/360000.0*2*M_PI ); }
+    return static_cast<double>( static_cast<double>(alpha)/360000.0*2*M_PI ); }
 
   extern EDSDict eds;
   extern PDODict pdo;

@@ -93,7 +93,7 @@ namespace canopen {
 	incomingPDOs.pop();
 	chainMap[ id2chain[m.nodeID_] ]->updateStatusWithIncomingPDO(m);
 	// fetching can be arbitrarily fast:
-	std::this_thread::sleep_for(std::chrono::milliseconds(5)); 
+	std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
       }
     }
   }
