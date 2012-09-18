@@ -51,26 +51,26 @@ int main(int argc, char *argv[]) {
 
   // move a bit in IP mode:
   
-  // double step_size = 2*M_PI / 2000.0;
-  double step_size = 2*M_PI / 20000.0;
+  double step_size = 2*M_PI / 1000.0;
+  // double step_size = 2*M_PI / 20000.0;
 
-  std::cout << canopen::getPos(4) << std::endl;
+  // std::cout << canopen::getPos(4) << std::endl;
   // return -1;
 
-  double pos = 1000;
+  double pos = 0;
   /* for (int i=0; i<10; i++) {
     canopen::sendPos(deviceID, pos);
     canopen::sendSync(10);
     } */
 
-  for (int i=0; i<2000; i++) {
+  for (int i=0; i<1000; i++) {
     canopen::sendPos(deviceID, pos);
     pos += step_size;
     canopen::sendSync(sync_deltaT_msec_int);
   }
   std::cout << pos << std::endl;
 
-  for (int i=2000; i>0; i--) {
+  for (int i=1000; i>0; i--) {
     canopen::sendPos(deviceID, pos);
     pos -= step_size;
     canopen::sendSync(sync_deltaT_msec_int);

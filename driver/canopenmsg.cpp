@@ -374,12 +374,22 @@ namespace canopen {
 
   Message* Message::waitForSDOAnswer() { 
     std::string ss = createMsgHash();
-    while (pendingSDOReplies[ss] == nullptr)
+    auto tic = std::chrono::high_resolution_clock::now();
+    bool timeout = false;
+    std::chrono::milliseconds timeout_msec(1000); // todo: find good timeout duration
+    while (!timeout && pendingSDOReplies[ss] == nullptr) {
+      if (std::chrono::high_resolution_clock::now() > tic + timeout_msec)
+	timeout = true;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    Message* m = pendingSDOReplies[ss];
-    pendingSDOReplies.erase(ss);
-    // delete m;  todo
-    return m;
+    }
+    if (!timeout) {
+      Message* m = pendingSDOReplies[ss];
+      pendingSDOReplies.erase(ss);
+      return m;
+    } else {
+      pendingSDOReplies.erase(ss);
+      return nullptr;
+    }
   } 
 
   bool Message::contains(std::string indexAlias) {
