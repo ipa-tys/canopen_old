@@ -37,10 +37,10 @@ int main(int argc, char *argv[]) {
   } 
 
   // performing homing of device:
-  if (!canopen::homing(deviceID)) {
+  /*  if (!canopen::homing(deviceID)) {
     std::cout << "Homing was not successful; aborting." << std::endl;
     return -1;
-  } 
+    } */
 
   // put device into interpolated_position_mode:
   if (!canopen::enableIPmode(deviceID)) {
@@ -50,8 +50,14 @@ int main(int argc, char *argv[]) {
   }
 
   // move a bit in IP mode:
-  double step_size = 2*M_PI / 2000.0;
-  double pos = 0;
+  
+  // double step_size = 2*M_PI / 2000.0;
+  double step_size = 2*M_PI / 20000.0;
+
+  std::cout << canopen::getPos(4) << std::endl;
+  // return -1;
+
+  double pos = 1000;
   /* for (int i=0; i<10; i++) {
     canopen::sendPos(deviceID, pos);
     canopen::sendSync(10);

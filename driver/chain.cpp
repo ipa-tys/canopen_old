@@ -66,7 +66,7 @@ namespace canopen {
   }
 
   void Device::setPos(double pos) {
-    desiredVel_ = (pos - actualPos_) / (sync_deltaT_msec_.count() / 1000.0);
+    desiredVel_ = (pos - desiredPos_) / (sync_deltaT_msec_.count() / 1000.0); // todo
     desiredPos_ = pos;
   }
 
