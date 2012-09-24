@@ -36,6 +36,7 @@ namespace canopen {
   void faultReset(uint16_t deviceID) {
     // sendSDO(deviceID, "controlword", "fault_reset");
     sendSDO(deviceID, "controlword", "reset_fault_0");
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sendSDO(deviceID, "controlword", "reset_fault_1");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
@@ -57,19 +58,30 @@ namespace canopen {
 
   bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec) {
     sendSDO(deviceID, "controlword", "sm_shutdown");
-    while (!sendSDO(deviceID, "statusword")->checkForConstant("ready_to_switch_on")) {
-      std::cout << "waiting.............." << std::endl;
+    auto tic = std::chrono::high_resolution_clock::now();
+    std::chrono::milliseconds timeoutDuration(500);
+    bool timeout = false;
+    while (!timeout && !sendSDO(deviceID, "statusword")->checkForConstant("ready_to_switch_on")) {
+      // std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      if (std::chrono::high_resolution_clock::now() > tic + timeoutDuration) {
+	timeout = true;
+	std::cout << "Device " << deviceID << " initDevice timeout" << std::endl;
+      }
     }
 
     setSyncInterval(deviceID, sync_deltaT_msec);
 
     sendSDO(deviceID, "controlword", "sm_switch_on");
-    while (!sendSDO(deviceID, "statusword")->checkForConstant("switched_on")) {
-      std::cout << "waiting.............." << std::endl;
+    timeout = false;
+    while (!timeout && !sendSDO(deviceID, "statusword")->checkForConstant("switched_on")) {
+      // std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      if (std::chrono::high_resolution_clock::now() > tic + timeoutDuration) {
+	timeout = true;
+	std::cout << "Device " << deviceID << " initDevice timeout" << std::endl;
+      }
     }
-
 
     // sendSDO(deviceID, "controlword", "sm_enable_operation");
     // Message* SDOreply = sendSDO(deviceID, "statusword", "", false);
@@ -113,6 +125,7 @@ namespace canopen {
     std::thread keyThread([&]() { std::string tt; std::getline(std::cin, tt); pressed=true; });
     keyThread.detach();
     canopen::homing(deviceID);
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     canopen::enableIPmode(deviceID);
     double pos = 0;
     canopen::sendSync(10);
@@ -122,7 +135,7 @@ namespace canopen {
       pos += direction * M_PI / 3600.0;
       canopen::sendSync(10);
     }
-    canopen::homing(deviceID);
+    // canopen::homing(deviceID);
     // canopen::enableBreak(deviceID);
     // std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
@@ -134,9 +147,16 @@ namespace canopen {
   
   bool releaseBreak(uint16_t deviceID) {
     sendSDO(deviceID, "controlword", "sm_enable_operation");
-    while (!sendSDO(deviceID, "statusword")->checkForConstant("operation_enable")) {
-      std::cout << "waiting.............." << std::endl;
+    bool timeout = false;
+    auto tic = std::chrono::high_resolution_clock::now();
+    std::chrono::milliseconds timeoutDuration(1500);
+    while (!timeout && !sendSDO(deviceID, "statusword")->checkForConstant("operation_enable")) {
+      // std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      if (std::chrono::high_resolution_clock::now() > tic + timeoutDuration) {
+	timeout = true;
+	std::cout << "Device " << deviceID << " releaseBreak timeout" << std::endl;
+      }
     }
     return true; // todo timeout
   }
@@ -153,9 +173,12 @@ namespace canopen {
 
   bool enableIPmode(uint16_t deviceID) {
     bool ok = true;
-    ok = ok & enableBreak(deviceID);
+    // ok = ok & enableBreak(deviceID);
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ok = ok & driveMode(deviceID, "interpolated_position_mode");
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ok = ok & releaseBreak(deviceID);
+    std::cout << "IP mode enabled? " << ok << std::endl;
     return ok; // todo
   }
 

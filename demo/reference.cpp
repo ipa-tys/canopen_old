@@ -20,15 +20,30 @@ int main(int argc, char *argv[]) {
   canopen::initListenerThread();    
 
   // put NMT and 402 state machines for device  to operational:
-  canopen::faultReset(deviceID);
+  // canopen::faultReset(deviceID);
+
+  canopen::sendSDO(deviceID, "controlword", "disable_voltage");
+  std::this_thread::sleep_for(std::chrono::milliseconds(50)); 
+
+  std::cout << "hi1" << std::endl;
   canopen::initNMT();
+  std::cout << "hi2" << std::endl;
   if (!canopen::initDevice(deviceID, std::chrono::milliseconds(10))) { 
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
   } 
 
-  canopen::moveUntilUserInterrupt(deviceID, direction);
+  auto ans = canopen::sendSDO(deviceID, "statusword");
+  std::cout << "Status switched_on? " << ans->checkForConstant("switched_on") << std::endl;
 
+
+  canopen::moveUntilUserInterrupt(deviceID, direction);
   // canopen::homing(deviceID);
-  // std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  canopen::shutdownDevice(deviceID);
+
+  // canopen::sendSDO(deviceID, "controlword", "disable_voltage");
+  std::this_thread::sleep_for(std::chrono::milliseconds(100)); 
+
+  canopen::homing(deviceID);
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 }
