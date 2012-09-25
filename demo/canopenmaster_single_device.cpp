@@ -28,7 +28,7 @@ void clientFunc() {
   // positions = canopen::chainMap["chain1"]->getActualPos();
   positions = canopen::getActualPosCallback("chain1");
 
-  for (int i=0; i<2000; i++) {
+  for (int i=0; i<250; i++) {
     canopen::setPosCallback("chain1", positions);
     positions[0] += step_size;
     actualPos = canopen::getActualPosCallback("chain1");
@@ -45,7 +45,7 @@ void clientFunc() {
 
   std::this_thread::sleep_for(std::chrono::milliseconds(4000));
 
-    for (int i=0; i<2000; i++) {
+    for (int i=0; i<250; i++) {
     canopen::setPosCallback("chain1", positions);
     positions[0] -= step_size;
     actualPos = canopen::getActualPosCallback("chain1");

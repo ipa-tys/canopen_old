@@ -1,5 +1,11 @@
-all: getpos init reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
+all: minimal getpos init reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
 # all: getpos reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
+
+minimal: minimal.o
+	g++ minimal.o -o minimal -lpthread -lcanopen -lpcan
+
+minimal.o: minimal.cpp
+	g++ -c minimal.cpp -std=c++0x
 
 getpos: getpos.o
 	g++ getpos.o -o getpos -lpthread -lcanopen -lpcan
@@ -50,5 +56,5 @@ canopenmaster_multiple_devices.o: canopenmaster_multiple_devices.cpp
 	g++ -c canopenmaster_multiple_devices.cpp -std=c++0x
 
 clean:
-	\rm -f *.o *~ getpos reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices 
+	\rm -f *.o *~ minimal getpos reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices 
 
