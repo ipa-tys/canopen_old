@@ -34,11 +34,6 @@ namespace canopen {
   void initNMT();
   void setSyncInterval(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec);
   bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec); // init NMT and 402 state machines
-  bool motorState_enableOperation(uint16_t deviceID);
-  bool motorState_readyToSwitchOn(uint16_t deviceID);
-  bool motorState_switchedOn(uint16_t deviceID);
-
-
   bool shutdownDevice(uint16_t deviceID); // init NMT and 402 state machines
   void sendSync(uint32_t sleepTime_msec=0); // sends a SYNC (must be done in regular time intervals)
 

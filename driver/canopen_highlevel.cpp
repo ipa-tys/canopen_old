@@ -42,16 +42,10 @@ namespace canopen {
   }
 
   void initNMT() {
-    std::cout << "reset application" << std::endl;
-    //sendNMT("reset_communication");   // todo: change this!, check NMT state
-    // std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    // sendNMT("reset_application");   // todo: change this!, check NMT state
-    // std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sendNMT("stop_remote_node");   // todo: change this!, check NMT state
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sendNMT("start_remote_node");
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
 
   void setSyncInterval(uint16_t deviceID,
@@ -61,96 +55,6 @@ namespace canopen {
     std::cout << "Sync interval: " << dt << std::endl;
     sendSDO(deviceID, "ip_time_units", dt);
   }
-
-  // no matter where device was before, 402 state should be operation_enabled after this
-  // assumption: NMT powered up
-  bool motorState_enableOperation(uint16_t deviceID) {
-    Message* m = canopen::sendSDO(deviceID, "statusword");
-
-    if (m->checkForConstant("switch_on_disabled"))
-      m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    if (m->checkForConstant("ready_to_switch_on"))
-      m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    if (m->checkForConstant("switched_on")) {
-      std::cout << "in switchedon state!" << std::endl;
-      m = canopen::sendSDO(deviceID, "controlword", "sm_enable_operation");
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    return m->checkForConstant("operation_enable");
-  }
-
-  bool motorState_switchedOn(uint16_t deviceID) {
-    Message* m = canopen::sendSDO(deviceID, "statusword");
-
-    if (m->checkForConstant("operation_enable")) {
-      std::cout << "going back from op_enable to switch_on" << std::endl;
-      m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
-    }
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    if (m->checkForConstant("switched_on"))
-      return true;
-
-    if (m->checkForConstant("fault")) {
-      std::cout << "Performing fault reset " << std::endl; 
-      m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
-    }
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    m = canopen::sendSDO(deviceID, "statusword");
-
-    if (m->checkForConstant("switch_on_disabled"))
-      m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    if (m->checkForConstant("ready_to_switch_on"))
-      m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    return m->checkForConstant("switched_on");
-  }
-
-  bool motorState_readyToSwitchOn(uint16_t deviceID) {
-    Message* m = canopen::sendSDO(deviceID, "statusword");
-
-    if (m->checkForConstant("operation_enable")) {
-      std::cout << "going back from op_enable to switch_on" << std::endl;
-      m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
-    }
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    if (m->checkForConstant("switched_on")) {
-      m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
-    }
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    if (m->checkForConstant("ready_to_switch_on"))
-      return true;
-
-    if (m->checkForConstant("switch_on_disabled"))
-      m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
-
-    m = canopen::sendSDO(deviceID, "statusword");
-    return m->checkForConstant("ready_to_switch_on");
-  }
-
 
   bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec) {
     sendSDO(deviceID, "controlword", "sm_shutdown");
@@ -259,18 +163,18 @@ namespace canopen {
 
   bool enableBreak(uint16_t deviceID) {
     sendSDO(deviceID, "controlword", "sm_switch_on");
-    while (!sendSDO(deviceID, "statusword")->checkForConstant("switched_on")) {
-      std::cout << "waiting.............." << std::endl;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    /* while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
+       std::cout << "waiting.............." << std::endl;
+       std::this_thread::sleep_for(std::chrono::milliseconds(10));
+       }*/
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
     return true; // todo timeout
   }
 
   bool enableIPmode(uint16_t deviceID) {
     bool ok = true;
     // ok = ok & enableBreak(deviceID);
-    //std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ok = ok & driveMode(deviceID, "interpolated_position_mode");
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ok = ok & releaseBreak(deviceID);
