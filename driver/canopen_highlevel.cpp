@@ -273,8 +273,8 @@ namespace canopen {
     //std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ok = ok & driveMode(deviceID, "interpolated_position_mode");
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    //ok = ok & releaseBreak(deviceID);
-    // std::cout << "IP mode enabled? " << ok << std::endl;
+    ok = ok & releaseBreak(deviceID);
+    std::cout << "IP mode enabled? " << ok << std::endl;
     return ok; // todo
   }
 
