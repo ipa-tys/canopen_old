@@ -111,6 +111,7 @@ namespace canopen {
 
   // only for debug/testing purposes:
   void debug_show_pendingSDOReplies(); 
+  void debugPrint_TPCAN(TPCANMsg msg);
 
   extern std::queue<Message> outgoingMsgQueue; // todo: only for debugging
   extern std::queue<Message> incomingPDOs;

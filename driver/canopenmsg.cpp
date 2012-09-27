@@ -218,6 +218,9 @@ namespace canopen {
       // std::cout << "incomingPDOs queue size: " << incomingPDOs.size() << std::endl;
 
     } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
+      std::cout << "-> (SDO in) ";
+      debugPrint_TPCAN(m.Msg);
+
       uint16_t index = m.Msg.DATA[1] + (m.Msg.DATA[2]<<8);
       uint8_t subindex = m.Msg.DATA[3];
       nodeID_ = m.Msg.ID - 0x580;
@@ -303,7 +306,10 @@ namespace canopen {
 	CAN_Write(h, &msg);
     
       } else { // SDO
-	// std::cout << "hi, SDO" << std::endl;
+	if (alias_ == "ip_time_index") values_[0]= -1; // todo, hack
+	// std::cout << "Alias: " << alias_ << "  Value: " << values_[0] << std::endl;
+
+
 	msg.ID = 0x600 + nodeID_;
 	msg.MSGTYPE = 0x00;
 	uint8_t len = eds.getLen(alias_);
@@ -334,6 +340,9 @@ namespace canopen {
 	  for (int i=0; i<len; i++) msg.DATA[4+i] = static_cast<uint8_t>( (v >> (8*i)) & 0xFF );
 	} 
 
+	std::cout << "<- (SDO-out) ";
+	debugPrint_TPCAN(msg);
+
 	// put on multiset
 	std::string ss = createMsgHash(msg);
 	pendingSDOReplies.insert(std::make_pair(ss, nullptr));
@@ -362,6 +371,13 @@ namespace canopen {
 	      << ", value: " << values_[0] << std::endl;
   }
 
+  void debugPrint_TPCAN(TPCANMsg msg) {
+    std::cout << msg.ID << "  ";
+    for (int i=0; i<8; i++) 
+      std::cout << std::hex << (int) msg.DATA[i] << "  ";
+    std::cout << std::endl;
+  }
+
   Message* Message::readCAN(bool blocking) { // todo: different blocking modes
     TPCANRdMsg m;
     if ((errno = LINUX_CAN_Read(canopen::h, &m))) {
@@ -376,7 +392,7 @@ namespace canopen {
     std::string ss = createMsgHash();
     auto tic = std::chrono::high_resolution_clock::now();
     bool timeout = false;
-    std::chrono::milliseconds timeout_msec(1000); // todo: find good timeout duration
+    std::chrono::milliseconds timeout_msec(1500); // todo: find good timeout duration
     while (!timeout && pendingSDOReplies[ss] == nullptr) {
       if (std::chrono::high_resolution_clock::now() > tic + timeout_msec)
 	timeout = true;
