@@ -18,10 +18,10 @@ int main(int argc, char *argv[]) {
 
   canopen::initListenerThread();    
   canopen::initNMT();
-  // canopen::setSyncInterval(deviceID, std::chrono::milliseconds(10));
+  canopen::setSyncInterval(deviceID, std::chrono::milliseconds(10));
   
-  if (!canopen::initDevice(deviceID, std::chrono::milliseconds(10))) { 
-  // if (!canopen::setMotorStateMachine(deviceID, "switched_on")) {
+  // if (!canopen::initDevice(deviceID, std::chrono::milliseconds(10))) { 
+  if (!canopen::setMotorStateMachine(deviceID, "switched_on")) {
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
   } 
