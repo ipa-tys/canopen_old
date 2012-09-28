@@ -38,5 +38,5 @@ modes_of_operation_display velocity_mode 0xFF 2
 modes_of_operation_display profile_velocity_mode 0xFF 3
 modes_of_operation_display torque_profile_mode 0xFF 4
 modes_of_operation_display interpolated_position_mode 0xFF 7
-ip_time_index milliseconds 0xFF 253
-ip_time_index hundredmicroseconds 0xFF 252
+ip_time_index milliseconds 0xFF 0xFD
+ip_time_index hundredmicroseconds 0xFF 0xFC
