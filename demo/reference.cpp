@@ -17,15 +17,17 @@ int main(int argc, char *argv[]) {
   } 
 
   canopen::initListenerThread();    
-  std::this_thread::sleep_for(std::chrono::milliseconds(50)); 
   canopen::initNMT();
+  // canopen::setSyncInterval(deviceID, std::chrono::milliseconds(10));
+  
   if (!canopen::initDevice(deviceID, std::chrono::milliseconds(10))) { 
+  // if (!canopen::setMotorStateMachine(deviceID, "switched_on")) {
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
   } 
 
-  canopen::moveUntilUserInterrupt(deviceID, direction);
-  canopen::homing(deviceID);
+  canopen::homingUntilUserInterrupt(deviceID, direction);
+  // canopen::homing(deviceID);
 
   return 0;
 }

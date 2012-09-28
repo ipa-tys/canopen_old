@@ -34,6 +34,8 @@ namespace canopen {
   void initNMT();
   void setSyncInterval(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec);
   bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec); // init NMT and 402 state machines
+  bool setMotorStateMachine(uint16_t deviceID, std::string targetState);
+
   bool shutdownDevice(uint16_t deviceID); // init NMT and 402 state machines
   void sendSync(uint32_t sleepTime_msec=0); // sends a SYNC (must be done in regular time intervals)
 
@@ -41,7 +43,7 @@ namespace canopen {
   // homing: perform device homing; returns "true" if "drive_referenced" appears in statusword
   // after homing; return "false" otherwise:
   bool homing(uint16_t deviceID); 
-  void moveUntilUserInterrupt(uint16_t deviceID, int direction);
+  void homingUntilUserInterrupt(uint16_t deviceID, int speedFactor);
 
   // put device into specific mode of operation
   // "homing_mode", "profile_position_mode", "profile_velocity_mode", 
