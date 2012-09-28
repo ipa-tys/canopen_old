@@ -127,6 +127,7 @@ namespace canopen {
     bool pressed = false;
     std::thread keyThread([&]() { std::string tt; std::getline(std::cin, tt); pressed=true; });
     keyThread.detach();
+    // the first homing ist necessary to ensure that we can start with 0:
     canopen::homing(deviceID);
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
     canopen::enableIPmode(deviceID);
@@ -134,6 +135,7 @@ namespace canopen {
     canopen::sendSync(10);
     canopen::sendSync(10);
     while (!pressed) {
+      std::cout << "move" << std::endl;
       canopen::sendPos(deviceID, pos);
       pos += direction * M_PI / 3600.0;
       canopen::sendSync(10);
