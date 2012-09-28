@@ -4,7 +4,7 @@ namespace canopen {
   // parsing chain and device descriptions:
   void operator>> (const YAML::Node& node, DeviceDescription& d) {
     node["name"] >> d.name;
-    node["id"] >> d.id;
+    node["id"] >>  d.id;
     node["bus"] >> d.bus;
   }
 
@@ -28,7 +28,7 @@ namespace canopen {
   
     for (int i=0; i<doc.size(); i++) {
       canopen::ChainDescription chain;
-      doc[i] >> chain;
+      doc[i]  >> chain;  // todo: check
       chainDesc.push_back(chain);
     }
     return chainDesc;

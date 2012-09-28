@@ -33,7 +33,8 @@ namespace canopen {
 
       // std::cout << "SYNC active? " << any_SendPosActive << std::endl;
 
-      any_SendPosActive = false;
+      // any_SendPosActive = false;
+      any_SendPosActive = true;
       for (auto chain : chainMap) 
 	if (chain.second->sendPosActive_)
 	  any_SendPosActive = true;
@@ -46,6 +47,8 @@ namespace canopen {
 	}
       }
 
+      // std::cout << "hi A" << std::endl;
+
       // send PDOs to CAN bus (if chain has sendPosActive_==true):
       for (auto chain : chainMap) 
 	if (chain.second->sendPosActive_) 
@@ -56,14 +59,22 @@ namespace canopen {
 	sendSync();
       }
 
+      // std::cout << "hi B" << std::endl;
+
       while (std::chrono::high_resolution_clock::now() < tic + sync_deltaT_msec) {
 	// fetch a message from the outgoingMsgQueue and send to CAN bus:
-	if (outgoingMsgQueue.size() > 0) {
-	  outgoingMsgQueue.front().writeCAN(true); 
+	if (outgoingMsgQueue.size() > 1) { // todo - check
+	  // std::cout << "write" << std::endl;
+
+	  // outgoingMsgQueue.front().writeCAN(true); 
+
+	  std::cout << "write B" << std::endl;
 	  outgoingMsgQueue.pop();
 	}
 	std::this_thread::sleep_for(std::chrono::microseconds(10)); 
       }
+
+      // std::cout << "hi C" << std::endl;
 
       // std::cout << ((std::chrono::high_resolution_clock::now()-tic)-sync_deltaT_msec).count() << std::endl;
       tic = std::chrono::high_resolution_clock::now();
@@ -85,13 +96,20 @@ namespace canopen {
 
     std::cout << "MAP: " << std::endl;
     for (auto it : id2chain)
-      std::cout << it.first << " ---> " << it.second << std::endl;
-    
+      std::cout << std::dec << it.first << " ---> " << it.second << std::endl;
+    std::cout << "ENDMAP: " << std::endl;
     while (true) {
-      if (incomingPDOs.size()>1) { // todo: change to ">0" as soon as queue is thread-safe
+      std::cout << "incomingPDOprocessor" << std::endl;
+      if (incomingPDOs.size()>3) { // todo: change to ">0" as soon as queue is thread-safe
+	std::cout << "processing a PDO" << std::endl;
 	Message m = incomingPDOs.front();
+	std::cout << "processing a PDO1" << std::endl;
 	incomingPDOs.pop();
+	std::cout << "processing a PDO2" << std::endl;
+	std::cout << id2chain[ m.nodeID_] << std::endl;
+	std::cout << m.nodeID_ << std::endl;
 	chainMap[ id2chain[m.nodeID_] ]->updateStatusWithIncomingPDO(m);
+	std::cout << "processing a PDO3" << std::endl;
 	// fetching can be arbitrarily fast:
 	std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
       }

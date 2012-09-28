@@ -61,7 +61,9 @@ namespace canopen {
   }
 
   bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec) {
+    std::cout << "initDevice 0" << std::endl;
     sendSDO(deviceID, "controlword", "sm_shutdown");
+    std::cout << "initDevice 0.5" << std::endl;
     auto tic = std::chrono::high_resolution_clock::now();
     std::chrono::milliseconds timeoutDuration(500);
     bool timeout = false;
@@ -74,7 +76,9 @@ namespace canopen {
       }
     }
 
+    std::cout << "initDevice 1" << std::endl;
     setSyncInterval(deviceID, sync_deltaT_msec);
+    std::cout << "initDevice 2" << std::endl;
 
     sendSDO(deviceID, "controlword", "sm_switch_on");
     timeout = false;
