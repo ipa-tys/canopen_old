@@ -62,6 +62,8 @@ namespace canopen {
     if (targetState == "operation_enable") {
       
       Message* m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("operation_enable"))
+	return true;
       if (m->checkForConstant("switch_on_disabled"))
 	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
       
@@ -79,6 +81,8 @@ namespace canopen {
     } else if (targetState == "switched_on") {
 
       Message* m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("switched_on")) 
+	return true;
       if (m->checkForConstant("operation_enable")) 
 	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
 
@@ -150,15 +154,24 @@ namespace canopen {
     // return sendSDO(deviceID, "statusword", "", false)->checkForConstant("ready_to_switch_on");
   }
 
-  void sendSync(uint32_t sleepTime_msec) {
+  void sendSync(uint32_t sleepTime_msec) { // todo: disable this version completely
     Message(0, "Sync").writeCAN(); 
     if (sleepTime_msec > 0)
       std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime_msec));
   }
+
+  void sendSync(std::chrono::milliseconds sleepTime_msec) {
+    Message(0, "Sync").writeCAN(); 
+    if (sleepTime_msec > std::chrono::milliseconds(0))
+      std::this_thread::sleep_for(sleepTime_msec);
+  }
+  
   
   // ------------- motor functions: -------------------------------------------
 
   bool homing(uint16_t deviceID) {
+    canopen::setMotorStateMachine(deviceID, "operation_enable");
+
     sendSDO(deviceID, "modes_of_operation", "homing_mode");
     sendSDO(deviceID, "controlword", "start_homing|enable_ip_mode");
 
@@ -169,16 +182,26 @@ namespace canopen {
     // wait for drive to stop moving:
     while (sendSDO(deviceID, "statusword")->checkForConstant("drive_is_moving")) 
       std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
-    
+
+    while (!sendSDO(deviceID, "statusword")->checkForConstant("drive_referenced")) 
+      std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
+
     // return true if drive signals it is referenced; false otherwise:
     return sendSDO(deviceID, "statusword")->checkForConstant("drive_referenced");
   }
 
-  void homingUntilUserInterrupt(uint16_t deviceID, int speedFactor=1) {
-    // todo: flexible sync rate
+  void userHoming(uint16_t deviceID, int speedFactor=1,
+		  std::chrono::milliseconds syncInterval) {
+    // the device moves until user interrupts with <Return>
+    // the stop position will be the new 0 (home/reference) position
+    canopen::setMotorStateMachine(deviceID, "operation_enable");
     
     bool pressed = false;
-    std::thread keyThread([&]() { std::string tt; std::getline(std::cin, tt); pressed=true; });
+    std::thread keyThread([&]() { 
+	std::string tt; 
+	std::getline(std::cin, tt);
+	pressed=true;
+      });
     keyThread.detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
@@ -187,18 +210,16 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(300));
     canopen::enableIPmode(deviceID);
     double pos = 0;
-    canopen::sendSync(10);
-    canopen::sendSync(10);
+    canopen::sendSync(syncInterval);
+    canopen::sendSync(syncInterval);
     std::cout << "speedFactor: " << speedFactor << std::endl;
     while (!pressed) {
       std::cout << "move" << std::endl;
       canopen::sendPos(deviceID, pos);
       pos += speedFactor * M_PI / 3600.0;
-      canopen::sendSync(10);
+      canopen::sendSync(syncInterval);
     }
     canopen::homing(deviceID); // actual position is now the new 0 point
-    // canopen::enableBreak(deviceID);
-    // std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
 
   bool driveMode(uint16_t deviceID, std::string mode) {
@@ -238,7 +259,7 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
     ok = ok & driveMode(deviceID, "interpolated_position_mode");
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    ok = ok & releaseBreak(deviceID);
+    //ok = ok & releaseBreak(deviceID);
     std::cout << "IP mode enabled? " << ok << std::endl;
     return ok; // todo
   }
