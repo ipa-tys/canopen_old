@@ -50,10 +50,13 @@ namespace canopen {
 
   void setSyncInterval(uint16_t deviceID,
 		       std::chrono::milliseconds sync_deltaT_msec) {
-    sendSDO(deviceID, "ip_time_index", "milliseconds");
     uint32_t dt = static_cast<uint32_t>( sync_deltaT_msec.count() );
     std::cout << "Sync interval: " << dt << std::endl;
     sendSDO(deviceID, "ip_time_units", dt);
+
+    sendSDO(deviceID, "ip_time_index", "milliseconds");
+
+    sendSDO(deviceID, "sync_timeout_factor", 0);
   }
 
   bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec) {
@@ -70,7 +73,7 @@ namespace canopen {
       }
     }
 
-    setSyncInterval(deviceID, sync_deltaT_msec);
+    // setSyncInterval(deviceID, sync_deltaT_msec);
 
     sendSDO(deviceID, "controlword", "sm_switch_on");
     timeout = false;

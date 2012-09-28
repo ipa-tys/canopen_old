@@ -29,8 +29,10 @@ int main(int argc, char *argv[]) {
   canopen::initListenerThread();    
 
   // put NMT and 402 state machines for device  to operational:
-  canopen::faultReset(deviceID);
+  // canopen::faultReset(deviceID);
   canopen::initNMT();
+  canopen::setSyncInterval(deviceID, sync_deltaT_msec);
+
   if (!canopen::initDevice(deviceID, sync_deltaT_msec)) { 
     std::cout << "Device could not be initialized; aborting." << std::endl;
     return -1;
