@@ -9,61 +9,33 @@ namespace canopen {
 
   inline int32_t rad2mdeg(double phi) {
     return static_cast<int32_t>( round( phi/(2*M_PI)*360000.0 ) ); }
-  
-  /* std::vector<uint32_t> rad2mdeg(std::vector<double> phis) {
-    std::vector<uint32_t> alphas;
-    for (auto phi : phis)
-      alphas.push_back( rad2mdeg( phi ) );
-    return alphas;
-    }*/
-
   inline double mdeg2rad(int32_t alpha) {
     return static_cast<double>( static_cast<double>(alpha)/360000.0*2*M_PI ); }
 
   extern EDSDict eds;
   extern PDODict pdo;
 
-  // general communication commands:
+  // general init and communication commands:
   bool openConnection(std::string devName); // initialize device driver
   void closeConnection();
-
-  void initListenerThread(); // initialize listener thread
   void listenerFunc();
-
-  void faultReset(uint16_t deviceID);
+  void initListenerThread(); // initialize listener thread
   void initNMT();
-  void setSyncInterval(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec);
-  bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec); // init NMT and 402 state machines
-  bool setMotorState(uint16_t deviceID, std::string targetState);
-
-  bool shutdownDevice(uint16_t deviceID); // init NMT and 402 state machines
-  void sendSync(uint32_t sleepTime_msec=0); // sends a SYNC (must be done in regular time intervals)
-  void sendSync(std::chrono::milliseconds sleepTime_msec); 
+  void setSyncInterval(uint16_t deviceID,
+		       std::chrono::milliseconds syncInterval);
+  void sendSync(std::chrono::milliseconds syncInterval); 
 
   // motor functions:
-  // homing: perform device homing; returns "true" if "drive_referenced" appears in statusword
-  // after homing; return "false" otherwise:
+  bool setMotorState(uint16_t deviceID, std::string targetState);
   bool homing(uint16_t deviceID); 
   void interactiveHoming
     (uint16_t deviceID,
      int speedFactor,
      std::chrono::milliseconds syncInterval=std::chrono::milliseconds(0));
-
-  // put device into specific mode of operation
-  // "homing_mode", "profile_position_mode", "profile_velocity_mode", 
-  // "torque_profile_mode", "interpolated_position_mode":
   bool driveMode(uint16_t deviceID, std::string mode);
-  bool enableIPmode(uint16_t deviceID);
-
+  // send target pos (rad) as PDO (for IP mode):
+  void sendPos(uint16_t deviceID, double pos_rad); 
   double getPos(uint16_t deviceID);
 
-  // before drive moves (and PDOs can be received), "releaseBreak" must be invoked
-  // to stop moving, "fastenBreak" must be invoked
-  // these commands trigger the 402 state machine between "operation_enable"
-  // and "ready_to_switch_on"
-  bool releaseBreak(uint16_t deviceID); 
-  bool enableBreak(uint16_t deviceID);
-
-  void sendPos(uint16_t deviceID, double pos_rad); // send position (rad) command as PDO (for IP mode)
 }
 #endif
