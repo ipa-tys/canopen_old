@@ -30,9 +30,9 @@ namespace canopen {
   void initNMT() {
     // todo: check NMT state; allow device-specific NMT
     sendNMT("stop_remote_node");   
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
     sendNMT("start_remote_node");
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
 
   void setSyncInterval(uint16_t deviceID,
@@ -68,97 +68,85 @@ namespace canopen {
     // todo: correct function of fault reset has not been tested yet
     if (targetState == "operation_enable") {
       
-      Message* m = canopen::sendSDO(deviceID, "statusword");
+      Message* m = getStatus(deviceID);
       if (m->checkForConstant("operation_enable"))
 	return true;
-      if (m->checkForConstant("fault")) 
-	m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if (m->checkForConstant("fault")) {
+	setStatus(deviceID, "reset_fault_1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
 
-      if (m->checkForConstant("switch_on_disabled"))
-	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
-      
-      m = canopen::sendSDO(deviceID, "statusword");
-      if (m->checkForConstant("ready_to_switch_on"))
-	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
+      if (getStatus(deviceID, "switch_on_disabled"))
+	setStatus(deviceID, "sm_shutdown");
+      if (getStatus(deviceID, "ready_to_switch_on"))
+	setStatus(deviceID, "sm_switch_on");
+      if (getStatus(deviceID, "switched_on"))
+	setStatus(deviceID, "sm_enable_operation");
 
-      m = canopen::sendSDO(deviceID, "statusword");
-      if (m->checkForConstant("switched_on")) 
-	m = canopen::sendSDO(deviceID, "controlword", "sm_enable_operation");
-
-      m = canopen::sendSDO(deviceID, "statusword");
-      return m->checkForConstant("operation_enable");
+      return getStatus(deviceID, "operation_enable");
 
     } else if (targetState == "switched_on") {
 
-      Message* m = canopen::sendSDO(deviceID, "statusword");
+      Message* m = getStatus(deviceID);
       if (m->checkForConstant("switched_on")) 
 	return true;
       if (m->checkForConstant("operation_enable")) 
-	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
+	setStatus(deviceID, "sm_switch_on");
 
-      m = canopen::sendSDO(deviceID, "statusword");
+      m = getStatus(deviceID);
       if (m->checkForConstant("switched_on"))
 	return true;
-      if (m->checkForConstant("fault")) 
-	m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
-      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      if (m->checkForConstant("fault")) {
+	setStatus(deviceID, "reset_fault_1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
 
-      m = canopen::sendSDO(deviceID, "statusword");
-      if (m->checkForConstant("switch_on_disabled"))
-	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
-
-      m = canopen::sendSDO(deviceID, "statusword");
-      if (m->checkForConstant("ready_to_switch_on"))
-	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
-
-      m = canopen::sendSDO(deviceID, "statusword");
-      return m->checkForConstant("switched_on");
+      if (getStatus(deviceID, "switch_on_disabled"))
+	setStatus(deviceID, "sm_shutdown");
+      
+      if (getStatus(deviceID, "ready_to_switch_on"))
+	setStatus(deviceID, "sm_switch_on");
+      
+      return getStatus(deviceID, "switched_on");
 
     }  else if (targetState == "ready_to_switch_on") {
 
-      Message* m = canopen::sendSDO(deviceID, "statusword");
+      Message* m = getStatus(deviceID);
       if (m->checkForConstant("ready_to_switch_on")) 
 	return true;
       if (m->checkForConstant("operation_enable")) 
-	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
+	setStatus(deviceID, "sm_switch_on");
 
-      m = canopen::sendSDO(deviceID, "statusword");
-      if (m->checkForConstant("switched_on"))
-	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
-
-      m = canopen::sendSDO(deviceID, "statusword");
+      if (getStatus(deviceID, "switched_on"))
+	setStatus(deviceID, "sm_shutdown");
+     
+      m = getStatus(deviceID);
       if (m->checkForConstant("ready_to_switch_on"))
 	return true;
       if (m->checkForConstant("fault")) {
-	m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
+	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
       
-      m = canopen::sendSDO(deviceID, "statusword");
-      if (m->checkForConstant("switch_on_disabled"))
-	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
+      if (getStatus(deviceID, "switch_on_disabled"))
+	setStatus(deviceID, "sm_shutdown");
       
-      m = canopen::sendSDO(deviceID, "statusword");
-      return m->checkForConstant("ready_to_switch_on");
+      return getStatus(deviceID, "ready_to_switch_on");
 
     }  else if (targetState == "switch_on_disabled") {
       
-      Message* m = canopen::sendSDO(deviceID, "statusword");
+      Message* m = getStatus(deviceID);
       if (m->checkForConstant("switch_on_disabled")) 
 	return true;
       if (m->checkForConstant("fault")) {
-	m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
+	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
 
-      m = canopen::sendSDO(deviceID, "statusword");
-      if (m->checkForConstant("operation_enable"))
-	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
-
-      m = canopen::sendSDO(deviceID, "controlword", "disable_voltage");
-      m = canopen::sendSDO(deviceID, "statusword");
-      return m->checkForConstant("switch_on_disabled");
+      if (getStatus(deviceID, "operation_enable"))
+	setStatus(deviceID, "sm_switch_on");
+      setStatus(deviceID, "disable_voltage");
+      return getStatus(deviceID, "switch_on_disabled");
 
     } else {
       std::cout << "This is not a supported motor state." << std::endl;
