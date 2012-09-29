@@ -58,12 +58,18 @@ namespace canopen {
     sendSDO(deviceID, "sync_timeout_factor", 0); // 0 = disable sync timeout
   }
 
-  bool setMotorStateMachine(uint16_t deviceID, std::string targetState) {
+  bool setMotorState(uint16_t deviceID, std::string targetState) {
+    // goes shortest way in the motor state machine to the desired target state
+    // todo: correct function of fault reset has not been tested yet
     if (targetState == "operation_enable") {
       
       Message* m = canopen::sendSDO(deviceID, "statusword");
       if (m->checkForConstant("operation_enable"))
 	return true;
+      if (m->checkForConstant("fault")) 
+	m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
       if (m->checkForConstant("switch_on_disabled"))
 	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
       
@@ -105,8 +111,49 @@ namespace canopen {
       return m->checkForConstant("switched_on");
 
     }  else if (targetState == "ready_to_switch_on") {
+
+      Message* m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("ready_to_switch_on")) 
+	return true;
+      if (m->checkForConstant("operation_enable")) 
+	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
+
+      m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("switched_on"))
+	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
+
+      m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("ready_to_switch_on"))
+	return true;
+      if (m->checkForConstant("fault")) {
+	m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
       
+      m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("switch_on_disabled"))
+	m = canopen::sendSDO(deviceID, "controlword", "sm_shutdown");
+      
+      m = canopen::sendSDO(deviceID, "statusword");
+      return m->checkForConstant("ready_to_switch_on");
+
     }  else if (targetState == "switch_on_disabled") {
+      
+      Message* m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("switch_on_disabled")) 
+	return true;
+      if (m->checkForConstant("fault")) {
+	m = canopen::sendSDO(deviceID, "controlword", "reset_fault_1");
+	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      }
+
+      m = canopen::sendSDO(deviceID, "statusword");
+      if (m->checkForConstant("operation_enable"))
+	m = canopen::sendSDO(deviceID, "controlword", "sm_switch_on");
+
+      m = canopen::sendSDO(deviceID, "controlword", "disable_voltage");
+      m = canopen::sendSDO(deviceID, "statusword");
+      return m->checkForConstant("switch_on_disabled");
 
     } else {
       std::cout << "This is not a supported motor state." << std::endl;
@@ -170,7 +217,7 @@ namespace canopen {
   // ------------- motor functions: -------------------------------------------
 
   bool homing(uint16_t deviceID) {
-    canopen::setMotorStateMachine(deviceID, "operation_enable");
+    canopen::setMotorState(deviceID, "operation_enable");
 
     sendSDO(deviceID, "modes_of_operation", "homing_mode");
     sendSDO(deviceID, "controlword", "start_homing|enable_ip_mode");
@@ -190,11 +237,11 @@ namespace canopen {
     return sendSDO(deviceID, "statusword")->checkForConstant("drive_referenced");
   }
 
-  void userHoming(uint16_t deviceID, int speedFactor=1,
+  void interactiveHoming(uint16_t deviceID, int speedFactor=1,
 		  std::chrono::milliseconds syncInterval) {
     // the device moves until user interrupts with <Return>
     // the stop position will be the new 0 (home/reference) position
-    canopen::setMotorStateMachine(deviceID, "operation_enable");
+    canopen::setMotorState(deviceID, "operation_enable");
     
     bool pressed = false;
     std::thread keyThread([&]() { 
@@ -203,28 +250,23 @@ namespace canopen {
 	pressed=true;
       });
     keyThread.detach();
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
-
-    // the first homing ist necessary to ensure that we can start with 0:
-    canopen::homing(deviceID);
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
-    canopen::enableIPmode(deviceID);
+    
+    canopen::homing(deviceID); // ensures that start position = 0
+    canopen::driveMode(deviceID, "interpolated_position_mode");
     double pos = 0;
-    canopen::sendSync(syncInterval);
-    canopen::sendSync(syncInterval);
-    std::cout << "speedFactor: " << speedFactor << std::endl;
     while (!pressed) {
-      std::cout << "move" << std::endl;
       canopen::sendPos(deviceID, pos);
       pos += speedFactor * M_PI / 3600.0;
       canopen::sendSync(syncInterval);
     }
-    canopen::homing(deviceID); // actual position is now the new 0 point
+    canopen::homing(deviceID); // ensures that end position = 0
   }
 
   bool driveMode(uint16_t deviceID, std::string mode) {
     sendSDO(deviceID, "modes_of_operation", mode);
-    return sendSDO(deviceID, "modes_of_operation_display")->checkForConstant(mode);
+    // todo: waitForConstant
+    return 
+      sendSDO(deviceID, "modes_of_operation_display")->checkForConstant(mode);
   }
   
   bool releaseBreak(uint16_t deviceID) {
@@ -232,12 +274,14 @@ namespace canopen {
     bool timeout = false;
     auto tic = std::chrono::high_resolution_clock::now();
     std::chrono::milliseconds timeoutDuration(1500);
-    while (!timeout && !sendSDO(deviceID, "statusword")->checkForConstant("operation_enable")) {
+    while (!timeout && !sendSDO(deviceID, "statusword")->
+	   checkForConstant("operation_enable")) {
       // std::cout << "waiting.............." << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
       if (std::chrono::high_resolution_clock::now() > tic + timeoutDuration) {
 	timeout = true;
-	std::cout << "Device " << deviceID << " releaseBreak timeout" << std::endl;
+	std::cout << "Device " << deviceID 
+		  << " releaseBreak timeout" << std::endl;
       }
     }
     return true; // todo timeout
@@ -252,25 +296,6 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
     return true; // todo timeout
   }
-
-  bool enableIPmode(uint16_t deviceID) {
-    bool ok = true;
-    // ok = ok & enableBreak(deviceID);
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    ok = ok & driveMode(deviceID, "interpolated_position_mode");
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    //ok = ok & releaseBreak(deviceID);
-    std::cout << "IP mode enabled? " << ok << std::endl;
-    return ok; // todo
-  }
-
-  /* void sendPos(uint16_t deviceID, double pos) {  
-    std::vector<uint32_t> v;
-    v.push_back(eds.getConst("controlword", "start_homing|enable_ip_mode"));
-    v.push_back(0);
-    v.push_back(pos);
-    Message(deviceID, "schunk_default_rPDO", v).writeCAN();
-    } */
 
   void sendPos(uint16_t deviceID, double pos_rad) {
     std::vector<int32_t> data =

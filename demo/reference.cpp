@@ -23,9 +23,8 @@ int main(int argc, char *argv[]) {
   canopen::initListenerThread();    
   canopen::initNMT();
   canopen::setSyncInterval(deviceID, syncInterval);
-  
-  canopen::userHoming(deviceID, speedFactor, syncInterval);
-  // canopen::homing(deviceID);
+  canopen::setMotorState(deviceID, "operation_enable");
+  canopen::interactiveHoming(deviceID, speedFactor, syncInterval);
 
   return 0;
 }
