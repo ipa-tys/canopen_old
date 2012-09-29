@@ -1,5 +1,5 @@
-all: getpos init reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
-# all: getpos reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
+all: getpos init interactiveHoming homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
+# all: getpos interactiveHoming homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices
 
 getpos: getpos.o
 	g++ getpos.o -o getpos -lpthread -lcanopen -lpcan
@@ -13,11 +13,11 @@ init: init.o
 init.o: init.cpp
 	g++ -c init.cpp -std=c++0x
 
-reference: reference.o
-	g++ reference.o -o reference -lpthread -lcanopen -lpcan
+interactiveHoming: interactiveHoming.o
+	g++ interactiveHoming.o -o interactiveHoming -lpthread -lcanopen -lpcan
 
-reference.o: reference.cpp
-	g++ -c reference.cpp -std=c++0x
+interactiveHoming.o: interactiveHoming.cpp
+	g++ -c interactiveHoming.cpp -std=c++0x
 
 homing: homing.o
 	g++ homing.o -o homing -lpthread -lcanopen -lpcan
@@ -50,5 +50,5 @@ canopenmaster_multiple_devices.o: canopenmaster_multiple_devices.cpp
 	g++ -c canopenmaster_multiple_devices.cpp -std=c++0x
 
 clean:
-	\rm -f *.o *~ getpos reference homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices 
+	\rm -f *.o *~ getpos interactiveHoming homing single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices 
 

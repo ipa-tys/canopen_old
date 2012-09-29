@@ -7,7 +7,7 @@ int main(int argc, char *argv[]) {
       << "(1) CAN deviceID" << std::endl
       << "(2) SYNC interval in milliseconds" << std::endl
       << "(3) positive (right) or negative (left) speed factor" << std::endl
-      << "Example: ./reference 12 10 1" << std::endl;
+      << "Example: ./interactiveHoming 12 10 1" << std::endl;
     return -1;
   }
   uint16_t deviceID = std::stoi(std::string(argv[1]));
