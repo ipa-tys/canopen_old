@@ -49,6 +49,18 @@ namespace canopen {
       std::this_thread::sleep_for(syncInterval);
   }
 
+  bool waitForStatus(uint16_t deviceID, std::string statusName,
+		     std::chrono::milliseconds timeout) {
+    bool isTimeout = false;
+    auto tic = std::chrono::high_resolution_clock::now();
+    while (!isTimeout && !getStatus(deviceID, statusName)) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      if (std::chrono::high_resolution_clock::now() > tic + timeout)
+	isTimeout = true;
+    }
+    return !isTimeout;
+  }
+
   // motor functions:
 
   bool setMotorState(uint16_t deviceID, std::string targetState) {

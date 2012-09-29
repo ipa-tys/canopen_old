@@ -24,6 +24,13 @@ namespace canopen {
   void setSyncInterval(uint16_t deviceID,
 		       std::chrono::milliseconds syncInterval);
   void sendSync(std::chrono::milliseconds syncInterval); 
+  inline Message* getStatus(uint16_t deviceID) {
+    return sendSDO(deviceID, "statusword"); }
+  inline bool getStatus(uint16_t deviceID, std::string statusName) {
+    return sendSDO(deviceID, "statusword")->checkForConstant(statusName); }
+  bool waitForStatus
+    (uint16_t deviceID, std::string statusName,
+     std::chrono::milliseconds timeout=std::chrono::milliseconds(100));
 
   // motor functions:
   bool setMotorState(uint16_t deviceID, std::string targetState);
