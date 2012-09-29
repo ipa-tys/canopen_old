@@ -1,9 +1,8 @@
 #include "canopen_highlevel.h"
 
 namespace canopen {
-  // todo: canopen::waitForConstant (like checkForConstant, but with loop)
 
-  // ---------------------- general communication commands: -------------------
+  // general communication commands:
 
   bool openConnection(std::string devName) {
     h = LINUX_CAN_Open(devName.c_str(), O_RDWR);
@@ -28,35 +27,29 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
-  double getPos(uint16_t deviceID) {
-    Message* m = sendSDO(deviceID, "position_actual_value");
-      return mdeg2rad( m->values_[0] );
-  }
-
-  void faultReset(uint16_t deviceID) {
-    // sendSDO(deviceID, "controlword", "fault_reset");
-    sendSDO(deviceID, "controlword", "reset_fault_0");
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    sendSDO(deviceID, "controlword", "reset_fault_1");
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-  }
-
   void initNMT() {
-    sendNMT("stop_remote_node");   // todo: change this!, check NMT state
+    // todo: check NMT state; allow device-specific NMT
+    sendNMT("stop_remote_node");   
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     sendNMT("start_remote_node");
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
   }
 
   void setSyncInterval(uint16_t deviceID,
-		       std::chrono::milliseconds sync_deltaT_msec) {
-    uint32_t dt = static_cast<uint32_t>( sync_deltaT_msec.count() );
-    std::cout << "Sync interval: " << dt << std::endl;
-    sendSDO(deviceID, "ip_time_units", dt);
-
+		       std::chrono::milliseconds syncInterval) {
+    sendSDO(deviceID, "ip_time_units",
+	    static_cast<uint32_t>( syncInterval.count() ));
     sendSDO(deviceID, "ip_time_index", "milliseconds");
     sendSDO(deviceID, "sync_timeout_factor", 0); // 0 = disable sync timeout
   }
+
+  void sendSync(std::chrono::milliseconds syncInterval) {
+    Message(0, "Sync").writeCAN(); 
+    if (syncInterval > std::chrono::milliseconds(0))
+      std::this_thread::sleep_for(syncInterval);
+  }
+
+  // motor functions:
 
   bool setMotorState(uint16_t deviceID, std::string targetState) {
     // goes shortest way in the motor state machine to the desired target state
@@ -161,62 +154,9 @@ namespace canopen {
     }
   }
 
-  bool initDevice(uint16_t deviceID, std::chrono::milliseconds sync_deltaT_msec) {
-    sendSDO(deviceID, "controlword", "sm_shutdown");
-    auto tic = std::chrono::high_resolution_clock::now();
-    std::chrono::milliseconds timeoutDuration(500);
-    bool timeout = false;
-    while (!timeout && !sendSDO(deviceID, "statusword")->checkForConstant("ready_to_switch_on")) {
-      // std::cout << "waiting.............." << std::endl;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      if (std::chrono::high_resolution_clock::now() > tic + timeoutDuration) {
-	timeout = true;
-	std::cout << "Device " << deviceID << " initDevice timeout" << std::endl;
-      }
-    }
-
-    setSyncInterval(deviceID, sync_deltaT_msec);
-
-    sendSDO(deviceID, "controlword", "sm_switch_on");
-    timeout = false;
-    while (!timeout && !sendSDO(deviceID, "statusword")->checkForConstant("switched_on")) {
-      // std::cout << "waiting.............." << std::endl;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      if (std::chrono::high_resolution_clock::now() > tic + timeoutDuration) {
-	timeout = true;
-	std::cout << "Device " << deviceID << " initDevice timeout" << std::endl;
-      }
-    }
-
-    // sendSDO(deviceID, "controlword", "sm_enable_operation");
-    // Message* SDOreply = sendSDO(deviceID, "statusword", "", false);
-    // return "true" if device is indeed operational ("false" otherwise):
-    // return SDOreply->checkForConstant("operation_enable");
-    return true;  // todo: implement time out
-  }
-
-  bool shutdownDevice(uint16_t deviceID) {
-    sendSDO(deviceID, "controlword", "sm_shutdown");
-    return true; // todo: check why this does not always return a value
-    // return sendSDO(deviceID, "statusword", "", false)->checkForConstant("ready_to_switch_on");
-  }
-
-  void sendSync(uint32_t sleepTime_msec) { // todo: disable this version completely
-    Message(0, "Sync").writeCAN(); 
-    if (sleepTime_msec > 0)
-      std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime_msec));
-  }
-
-  void sendSync(std::chrono::milliseconds sleepTime_msec) {
-    Message(0, "Sync").writeCAN(); 
-    if (sleepTime_msec > std::chrono::milliseconds(0))
-      std::this_thread::sleep_for(sleepTime_msec);
-  }
-  
-  
-  // ------------- motor functions: -------------------------------------------
-
   bool homing(uint16_t deviceID) {
+    // set current position as device 0 position
+    // returns "true" if "drive_referenced" has appeared in device statusword
     canopen::setMotorState(deviceID, "operation_enable");
 
     sendSDO(deviceID, "modes_of_operation", "homing_mode");
@@ -269,34 +209,6 @@ namespace canopen {
       sendSDO(deviceID, "modes_of_operation_display")->checkForConstant(mode);
   }
   
-  bool releaseBreak(uint16_t deviceID) {
-    sendSDO(deviceID, "controlword", "sm_enable_operation");
-    bool timeout = false;
-    auto tic = std::chrono::high_resolution_clock::now();
-    std::chrono::milliseconds timeoutDuration(1500);
-    while (!timeout && !sendSDO(deviceID, "statusword")->
-	   checkForConstant("operation_enable")) {
-      // std::cout << "waiting.............." << std::endl;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-      if (std::chrono::high_resolution_clock::now() > tic + timeoutDuration) {
-	timeout = true;
-	std::cout << "Device " << deviceID 
-		  << " releaseBreak timeout" << std::endl;
-      }
-    }
-    return true; // todo timeout
-  }
-
-  bool enableBreak(uint16_t deviceID) {
-    sendSDO(deviceID, "controlword", "sm_switch_on");
-    /* while (!sendSDO(deviceID, "statusword", "", false)->checkForConstant("switched_on")) {
-       std::cout << "waiting.............." << std::endl;
-       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-       }*/
-    std::this_thread::sleep_for(std::chrono::milliseconds(250));
-    return true; // todo timeout
-  }
-
   void sendPos(uint16_t deviceID, double pos_rad) {
     std::vector<int32_t> data =
       {eds.getConst("controlword", "start_homing|enable_ip_mode"),
@@ -304,5 +216,10 @@ namespace canopen {
        rad2mdeg(pos_rad) }; // Schunk has millidegrees as unit instead of rad
     sendPDO(deviceID, "schunk_default_rPDO", data);
   }
-
+  
+  double getPos(uint16_t deviceID) {
+    Message* m = sendSDO(deviceID, "position_actual_value");
+    return mdeg2rad( m->values_[0] );
+  }
+  
 }
