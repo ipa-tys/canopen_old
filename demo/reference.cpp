@@ -1,14 +1,18 @@
 #include <canopen_highlevel.h>
 
 int main(int argc, char *argv[]) {
-  if (argc != 3) {
-    std::cout << "Please call the program with the CAN deviceID"
-	      << "and 1 (right) or -1 (left)"
-	      << "e.g. './single_device 12 1'" << std::endl;
+  if (argc != 4) {
+    std::cout
+      << "Arguments:" << std::endl
+      << "(1) CAN deviceID" << std::endl
+      << "(2) SYNC interval in milliseconds" << std::endl
+      << "(3) positive (right) or negative (left) speed factor" << std::endl
+      << "Example: ./reference 12 10 1" << std::endl;
     return -1;
   }
   uint16_t deviceID = std::stoi(std::string(argv[1]));
-  int direction = std::stoi(std::string(argv[2]));
+  std::chrono::milliseconds syncInterval(std::stoi(std::string(argv[2])));
+  int speedFactor = std::stoi(std::string(argv[3]));
 
   // initialize CAN device driver:
   if (!canopen::openConnection("/dev/pcan32")) {
@@ -17,15 +21,10 @@ int main(int argc, char *argv[]) {
   } 
 
   canopen::initListenerThread();    
-  std::this_thread::sleep_for(std::chrono::milliseconds(50)); 
   canopen::initNMT();
-  if (!canopen::initDevice(deviceID, std::chrono::milliseconds(10))) { 
-    std::cout << "Device could not be initialized; aborting." << std::endl;
-    return -1;
-  } 
-
-  canopen::moveUntilUserInterrupt(deviceID, direction);
-  canopen::homing(deviceID);
+  canopen::setSyncInterval(deviceID, syncInterval);
+  canopen::setMotorState(deviceID, "operation_enable");
+  canopen::interactiveHoming(deviceID, speedFactor, syncInterval);
 
   return 0;
 }
