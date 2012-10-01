@@ -12,3 +12,12 @@ torque_actual_value 0x6077 0x0 2 rw
 position_actual_value 0x6064 0x0 4 ro
 ip_time_units 0x60C2 0x1 1 rw
 ip_time_index 0x60C2 0x2 1 rw
+manufacturer_software_version 0x100a 0 0x0 4 ro
+error_register 0x1001 0 4 ro
+manufacturer_status 0x88E4 0 4 ro 
+predefined_error_field_no 0x1003 0 4 ro
+predefined_error_field1 0x1003 1 4 ro
+predefined_error_field2 0x1003 2 4 ro
+error_detail 0x200b 1 4 ro
+file 0x200b 2 4 ro
+line 0x200b 3 4 ro
