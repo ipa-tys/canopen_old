@@ -196,7 +196,7 @@ namespace canopen {
     double pos = 0;
     while (!pressed) {
       canopen::sendPos(deviceID, pos);
-      pos += speedFactor * M_PI / 3600.0;
+      pos += speedFactor * 0.25 * M_PI / 3600.0;
       canopen::sendSync(syncInterval);
     }
     canopen::homing(deviceID); // ensures that end position = 0

@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     }
   }
    
-  canopen::setMotorState(deviceID, "switch_on_disabled");
+  canopen::setMotorState(deviceID, "ready_to_switch_on");
   canopen::closeConnection();
   return 0;
 }
