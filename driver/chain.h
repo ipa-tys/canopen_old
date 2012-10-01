@@ -17,12 +17,21 @@
 namespace canopen {
   extern std::chrono::milliseconds syncInterval;
 
+  template <class T>
+  void printVector(std::string name, std::vector<T> v) {
+    std::cout << name << ": ";
+    for (auto it : v)
+      std::cout << it << " ";
+    std::cout << std::endl;
+  }
+
   class Device {  // [positions]=rad, [velocities]=rad/sec
   public:
 
     inline Device(std::string alias, std::string CANbus,
 		  uint16_t CANid):
     alias_(alias), CANbus_(CANbus), CANid_(CANid),
+      actualPos_(0), desiredPos_(0), actualVel_(0), desiredVel_(0),
       initialized_(false), timeStamp_( std::chrono::microseconds(0) ) {}
     
     void CANopenInit();
@@ -49,7 +58,16 @@ namespace canopen {
     std::vector<double> desiredPos;
     std::vector<double> actualVel;
     std::vector<double> desiredVel;
+    bool initialized;
     bool fault;
+    void print() {
+      std::cout << "Initialized? " << initialized << std::endl;
+      printVector("actualPos: ", actualPos);
+      printVector("desiredPos: ", desiredPos);
+      printVector("actualVel: ", actualVel);
+      printVector("desiredVel: ", desiredVel);
+      std::cout << std::endl;
+    }
   };
 
   class Chain { // [positions]=rad, [velocities]=rad/sec
@@ -84,17 +102,23 @@ namespace canopen {
 	cs.actualVel.push_back(device->actualVel_);
 	cs.desiredVel.push_back(device->desiredVel_);
       }
+      cs.initialized = initialized_;
       cs.fault = fault_;
       return cs;
     }
 
     inline void update(Message m) {
+      if (m.contains("position_actual_value")) {
+	std::cout << "Timestamp: "
+		  << std::chrono::duration_cast<std::chrono::milliseconds>(m.timeStamp_).count()
+		  << std::endl;
+	getChainState().print();
+      }
       deviceMap_[m.nodeID_]->update(m);
       if (!initialized_) {
 	bool allInitialized = true;
-	for (auto device : deviceMap_)
-	  if (! device.second->initialized_)
-	    allInitialized = false;
+	for (auto device : devices_)
+	  if (! device->initialized_) allInitialized = false;
 	if (allInitialized) initialized_ = true;
       }
     }

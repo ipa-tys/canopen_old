@@ -14,7 +14,7 @@ init.o: init.cpp
 	g++ -c init.cpp -std=c++0x
 
 interactiveHoming: interactiveHoming.o
-	g++ interactiveHoming.o -o interactiveHoming -lpthread -lcanopen -lpcan
+	g++ interactiveHoming.o -o interactiveHoming -pthread -lcanopen -lpcan
 
 interactiveHoming.o: interactiveHoming.cpp
 	g++ -c interactiveHoming.cpp -std=c++0x
@@ -38,7 +38,7 @@ multiple_devices.o: multiple_devices.cpp
 	g++ -c multiple_devices.cpp -std=c++0x
 
 canopenmaster_single_device: canopenmaster_single_device.o
-	g++ canopenmaster_single_device.o -o canopenmaster_single_device -lpthread -lcanopen -lpcan -lyaml-cpp
+	g++ canopenmaster_single_device.o -o canopenmaster_single_device -pthread -lcanopen -lpcan -lyaml-cpp
 
 canopenmaster_single_device.o: canopenmaster_single_device.cpp
 	g++ -c canopenmaster_single_device.cpp -std=c++0x

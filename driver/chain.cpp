@@ -1,8 +1,8 @@
 #include "chain.h"
 
 namespace canopen {
-  // std::chrono::milliseconds syncInterval; // todo: necessary?
-  // std::map<std::string, Chain*> chainMap; // todo: necessary?
+  std::chrono::milliseconds syncInterval; // todo: necessary?
+  std::map<std::string, Chain*> chainMap; // todo: necessary?
 
   void Device::CANopenInit() {
     setSyncInterval(CANid_, canopen::syncInterval); 

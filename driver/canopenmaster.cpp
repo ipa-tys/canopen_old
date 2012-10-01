@@ -10,8 +10,8 @@ namespace canopen {
  
   void masterFunc() {
     auto tic = std::chrono::high_resolution_clock::now();
-    sendSync(syncInterval); // todo: check if this pre-sync is necessary
-    sendSync(syncInterval);
+    // sendSync(syncInterval); // todo: check if this pre-sync is necessary
+    // sendSync(syncInterval);
 
     while (true) {
       tic = std::chrono::high_resolution_clock::now();
@@ -22,7 +22,7 @@ namespace canopen {
 	chain.second->sendPos();
 
       // SDOs are only sent in the remaining time of a SYNC cycle:
-      while (std::chrono::high_resolution_clock::now() < tic + syncInterval) {
+      while (std::chrono::high_resolution_clock::now() < tic + syncInterval - std::chrono::microseconds(100)) {
 	// fetch a message from the outgoingMsgQueue and send to CAN bus:
 	if (outgoingMsgQueue.size() > 0) {
 	  outgoingMsgQueue.front().writeCAN(true); 
@@ -30,6 +30,8 @@ namespace canopen {
 	}
 	std::this_thread::sleep_for(std::chrono::microseconds(1)); 
       }
+      while (std::chrono::high_resolution_clock::now() < tic + syncInterval)
+	std::this_thread::sleep_for(std::chrono::microseconds(1)); 
     }
   }
 
