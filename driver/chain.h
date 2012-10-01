@@ -5,105 +5,114 @@
 #include <string>
 #include <libpcan.h>
 #include <cmath>
-#include <set>
 #include <map>
 #include <queue>
 #include <cassert>
 #include <regex>
-#include <pwd.h>
-#include <fstream>
-#include "yaml-cpp/yaml.h"
 #include "canopen_highlevel.h"
+#include "chain_description.h"
 
 #define _USE_MATH_DEFINES
 
 namespace canopen {
-  
-  // parsing chain and device descriptions:
-  struct DeviceDescription {
-    std::string name;
-    int id;
-    std::string bus;
-  };
-  struct ChainDescription {
-    std::string name;
-    std::vector<DeviceDescription> devices;
-  };
-  void operator>> (const YAML::Node& node, DeviceDescription& d);
-  void operator>> (const YAML::Node& node, ChainDescription& c);
-  std::vector<ChainDescription> parseChainDescription(std::string filename);
+  extern std::chrono::milliseconds syncInterval;
 
-  class Device {
+  class Device {  // [positions]=rad, [velocities]=rad/sec
   public:
-    
-  Device(std::string alias, std::string CANbus, uint16_t CANid,
-	 std::chrono::milliseconds sync_deltaT_msec):
+
+    inline Device(std::string alias, std::string CANbus,
+		  uint16_t CANid):
     alias_(alias), CANbus_(CANbus), CANid_(CANid),
-      sync_deltaT_msec_(sync_deltaT_msec),
-      actualPos_(0), actualVel_(0), desiredPos_(0), desiredVel_(0), 
-      timeStamp_( std::chrono::microseconds(0) ) {
-    }
-
-    void deviceInit(std::chrono::milliseconds sync_deltaT_msec) {
-      initDevice(CANid_, sync_deltaT_msec); }   // sync_deltaT_msec_
-    // todo (optional): deviceInit could have bool return value
-    void deviceHoming() { homing(CANid_); }
-    void deviceIPmode() { enableIPmode(CANid_); }
+      initialized_(false), timeStamp_( std::chrono::microseconds(0) ) {}
     
-    // Note: in IP mode, a desired velocity determines the desired position
-    // and vice versa, because the sync frequency is considered fixed
-    // and the device tries to reach a desired position within a
-    // given SYNC cycle
-    void setPos(double pos);
-    void setVel(double vel);
-
-    double getActualPos() { return actualPos_; } 
-    double getDesiredPos() { return desiredPos_; } 
-    double getActualVel() { return actualVel_; } 
-    double getDesiredVel() { return desiredVel_; } 
-
-    void updateStatusWithIncomingPDO(Message m);
-
-    // todo: private:
-    void updateActualPosAndVel(double newPos, std::chrono::microseconds newTimeStamp);
-
-    std::string alias_;
-    std::string CANbus_;
-    uint16_t CANid_;
-    std::chrono::milliseconds sync_deltaT_msec_; // time between two SYNCs in msec
+    void CANopenInit();
+    void update(Message m);
+    inline void setVel(double vel) {
+      desiredVel_ = vel;
+      desiredPos_ = desiredPos_ + vel * (syncInterval.count() / 1000.0);
+    }
 
     double actualPos_; // unit = rad
     double desiredPos_; // unit = rad
     double actualVel_; // unit = rad/sec
     double desiredVel_; // unit = rad/sec
-    // timestamp of latest received CAN message (unit = microsec):
     std::chrono::microseconds timeStamp_; 
-  };
 
-  class Chain {
-  public:
-    Chain(ChainDescription chainDesc, std::chrono::milliseconds sync_deltaT_msec);
-    void chainInit(std::chrono::milliseconds sync_deltaT_msec);
-    void chainHoming();
-    void chainIPmode();
-    std::vector<uint16_t> getDeviceIDs();
-    void sendPos();
-    void updateStatusWithIncomingPDO(Message m); 
-    // ↑ todo: save deviceID lookup by using a map
-
-    std::vector<double> getDesiredPos();  // [rad]
-    std::vector<double> getActualPos();  // [rad]
-    std::vector<double> getDesiredVel(); // [rad/sec]
-    std::vector<double> getActualVel(); // [rad/sec]
-    void setPos(std::vector<double> positions); // [rad]
-    void setVel(std::vector<double> velocities); // [rad/sec]
-    bool sendPosActive_;
-    // private:
     std::string alias_;
-    std::vector<Device> devices_; 
-    // ↑ todo: this should be a map: int CANid -> device object
+    std::string CANbus_;
+    uint16_t CANid_;
+    bool initialized_;
   };
+
+  struct ChainState {
+    std::vector<double> actualPos;
+    std::vector<double> desiredPos;
+    std::vector<double> actualVel;
+    std::vector<double> desiredVel;
+    bool fault;
+  };
+
+  class Chain { // [positions]=rad, [velocities]=rad/sec
+  public:
+    inline Chain(ChainDescription chainDesc):
+    alias_(chainDesc.name), initialized_(false), fault_(false) {
+      for (auto d : chainDesc.devices) {
+	Device* dev = new Device(d.name, d.bus, d.id);
+	deviceMap_[d.id] = dev;
+	devices_.push_back(dev);
+      }
+    }
+    
+    inline void CANopenInit() {
+      for (auto device : devices_)
+	device->CANopenInit();  }
+
+    inline void sendPos() {
+      if (initialized_ & !fault_)
+	for (auto device : devices_)
+	  canopen::sendPos(device->CANid_, device->desiredPos_);  }
+
+    inline void setVel(std::vector<double> velocities) {
+      for (int i=0; i<velocities.size(); i++)
+	devices_[i]->setVel(velocities[i]);  }
+
+    inline ChainState getChainState() {
+      ChainState cs;
+      for (auto device : devices_) {
+	cs.actualPos.push_back(device->actualPos_);
+	cs.desiredPos.push_back(device->desiredPos_);
+	cs.actualVel.push_back(device->actualVel_);
+	cs.desiredVel.push_back(device->desiredVel_);
+      }
+      cs.fault = fault_;
+      return cs;
+    }
+
+    inline void update(Message m) {
+      deviceMap_[m.nodeID_]->update(m);
+      if (!initialized_) {
+	bool allInitialized = true;
+	for (auto device : deviceMap_)
+	  if (! device.second->initialized_)
+	    allInitialized = false;
+	if (allInitialized) initialized_ = true;
+      }
+    }
+
+    std::string alias_;
+    // two alternative access modes for the devices in a chain:
+    std::map<uint16_t, Device*> deviceMap_;
+    std::vector<Device*> devices_;
+    bool initialized_;
+    bool fault_;
+  };
+
+  extern std::map<std::string, Chain*> chainMap;
+
+  inline void initChainMap(std::vector<ChainDescription> chainDesc) {
+    for (auto c : chainDesc) 
+      chainMap[c.name] = new Chain(c);   }
+  
 
 }
-
 #endif
