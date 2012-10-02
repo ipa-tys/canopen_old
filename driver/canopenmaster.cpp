@@ -59,7 +59,11 @@ namespace canopen {
       if (incomingPDOs.size()>1) { // todo: change to ">0" as soon as queue is thread-safe
 	Message m = incomingPDOs.front();
 	incomingPDOs.pop();
-	chainMap[ id2chain[m.nodeID_] ]->update(m);
+	std::cout << "NodeID: " << (int) m.nodeID_ << std::endl;
+	if (id2chain.find(m.nodeID_) != id2chain.end())
+	  chainMap[ id2chain[m.nodeID_] ]->update(m);
+	else
+	  std::cout << "Key " << m.nodeID_ << " not found!" << std::endl;
 	std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
       }
     }

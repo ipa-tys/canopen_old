@@ -82,13 +82,22 @@ int main(int argc, char *argv[]) {
   auto chainDesc = canopen::parseChainDescription("single_device.yaml");
   canopen::initChainMap(chainDesc);
 
+  std::cout << "1" << std::endl;
+
   if (!canopen::openConnection("/dev/pcan32")) {
     std::cout << "Cannot open CAN device; aborting." << std::endl;
     return -1;
   } 
+
+  std::cout << "2" << std::endl;
   canopen::initListenerThread();
+  std::cout << "3" << std::endl;
   canopen::initIncomingPDOProcessorThread();
+  std::cout << "4" << std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(2));
   canopen::initMasterThread();
+  std::cout << "5" << std::endl;
+
   canopen::initNMT();
   for (auto it : canopen::chainMap) 
     it.second->CANopenInit();
