@@ -22,7 +22,11 @@ namespace canopen {
 	std::chrono::microseconds deltaTime( m.timeStamp_ - timeStamp_ );
 	double deltaTime_double = static_cast<double>(deltaTime.count()) * 0.000001;
 	actualVel_ = (newPos - actualPos_) / deltaTime_double;
-	if (!initialized_) initialized_ = true;
+	if (!initialized_) {
+	  initialized_ = true;
+	  desiredPos_ = actualPos_;
+	  desiredVel_ = 0;
+	}
       }
       actualPos_ = newPos;
       timeStamp_ = m.timeStamp_;

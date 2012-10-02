@@ -38,7 +38,11 @@ namespace canopen {
     void update(Message m);
     inline void setVel(double vel) {
       desiredVel_ = vel;
-      desiredPos_ = desiredPos_ + vel * (syncInterval.count() / 1000.0);
+      // desiredPos_ = desiredPos_ + vel * (syncInterval.count() / 1000.0);
+    }
+
+    inline void updateDesiredPos() {
+      desiredPos_ = desiredPos_ + desiredVel_ * (syncInterval.count() / 1000.0);
     }
 
     double actualPos_; // unit = rad
@@ -85,10 +89,17 @@ namespace canopen {
       for (auto device : devices_)
 	device->CANopenInit();  }
 
+    inline void updateDesiredPos() {
+      if (initialized_ & !fault_)
+	for (auto device : devices_) 
+	  device->updateDesiredPos();
+    }
+
     inline void sendPos() {
       if (initialized_ & !fault_)
-	for (auto device : devices_)
-	  canopen::sendPos(device->CANid_, device->desiredPos_);  }
+	for (auto device : devices_) 
+	  canopen::sendPos(device->CANid_, device->desiredPos_);
+    }
 
     inline void setVel(std::vector<double> velocities) {
       for (int i=0; i<velocities.size(); i++)

@@ -18,8 +18,10 @@ namespace canopen {
       sendSync();
 
       // PDOs are sent to all chains every SYNC cycle:
-      for (auto chain : chainMap)
+      for (auto chain : chainMap) {
+	chain.second->updateDesiredPos();
 	chain.second->sendPos();
+      }
 
       // SDOs are only sent in the remaining time of a SYNC cycle:
       while (std::chrono::high_resolution_clock::now() < tic + syncInterval - std::chrono::microseconds(100)) {
