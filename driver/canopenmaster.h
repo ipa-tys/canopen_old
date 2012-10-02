@@ -4,15 +4,14 @@
 
 
 namespace canopen {
-  extern std::map<std::string, Chain*> chainMap;
-  extern   std::chrono::milliseconds sync_deltaT_msec;
 
-  void initChainMap(std::vector<ChainDescription> chainDesc);
   void initMasterThread();
   void masterFunc();
+
   void initIncomingPDOProcessorThread();
   void incomingPDOProcessorFunc();
 
+  /*
   inline void initCallback(std::string chainName,
 			   std::chrono::milliseconds sync_deltaT_msec) {
     chainMap[chainName]->chainInit(sync_deltaT_msec); }
@@ -37,7 +36,7 @@ namespace canopen {
   
   inline std::vector<double> getDesiredVelCallback(std::string chainName) {
     return chainMap[chainName]->getDesiredVel(); }
-
+  */
     
 
   // void jointVelocitiesCallback(std::string chainName, std::vector<int> velocities);

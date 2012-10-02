@@ -5,30 +5,33 @@
 #include <canopenmaster.h>
 #include "yaml-cpp/yaml.h"
 
-// this shows a demo of how a client can communicate with the master by
-// invoking specific callback functions. Here, this is done within the same
-// process from a separate thread. The corresponding ROS demos show the same
-// approach but using ROS interprocess communication via services and
-// publishers/subscribers.
-
 void clientFunc() { 
 
-  canopen::initCallback("chain1", canopen::sync_deltaT_msec);
-  // canopen::homingCallback("chain1");
-  canopen::IPmodeCallback("chain1");
-  std::this_thread::sleep_for(std::chrono::milliseconds(300));
-    
-  // std::vector<double> positions = canopen::getActualPosCallback("chain1");
-  
   double step_size = 2 * M_PI / 2000.0;
-  std::vector<double> actualPos;
-  std::vector<double> positions;
+  // std::vector<double> actualPos;
+  // std::vector<double> positions;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds(500));
   // positions = canopen::chainMap["chain1"]->getActualPos();
-  positions = canopen::getActualPosCallback("chain1");
+  // positions = canopen::getActualPosCallback("chain1");
 
-  for (int i=0; i<2000; i++) {
+  canopen::chainMap["chain1"]->setVel({0.1});
+  std::this_thread::sleep_for(std::chrono::seconds(4));
+  canopen::chainMap["chain1"]->setVel({-0.1});
+  std::this_thread::sleep_for(std::chrono::seconds(4));
+  canopen::chainMap["chain1"]->setVel({0.0});
+  std::this_thread::sleep_for(std::chrono::seconds(1));
+  canopen::chainMap["chain1"]->setVel({-0.2});
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  canopen::chainMap["chain1"]->setVel({0.2});
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+  canopen::chainMap["chain1"]->setVel({0.0});
+  
+    // canopen::ChainState cs = canopen::chainMap["chain1"]->getChainState();
+    // cs.print();
+    // std::this_thread::sleep_for(std::chrono::seconds(1));
+  
+
+  /* for (int i=0; i<2000; i++) {
     canopen::setPosCallback("chain1", positions);
     positions[0] += step_size;
     actualPos = canopen::getActualPosCallback("chain1");
@@ -60,7 +63,7 @@ void clientFunc() {
     std::this_thread::sleep_for(canopen::sync_deltaT_msec);
     } 
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(300));
+    std::this_thread::sleep_for(std::chrono::milliseconds(300)); */
 
   // std::this_thread::sleep_for(std::chrono::seconds(1));
   // canopen::homingCallback("chain1");
@@ -68,34 +71,36 @@ void clientFunc() {
 }
 
 int main(int argc, char *argv[]) {
-  canopen::using_master_thread = true;
 
   if (argc != 2) {
-    std::cout << "sync rate must be given as argument!" << std::endl;
+    std::cout << "sync interval [msec] must be given as argument!" << std::endl;
     return -1;
   }
-  
-  int sync_deltaT_msec_int = std::stoi(std::string(argv[1]));
-  canopen::sync_deltaT_msec = std::chrono::milliseconds(sync_deltaT_msec_int);
-  std::cout << "sync rate: " << sync_deltaT_msec_int << std::endl;
-  // todo: canopen::parseChainDesc(filename);
-  // canopen::initChainMap("/home/tys/git/other/canopen/demo/single_device.csv");
 
+  canopen::using_master_thread = true;
+  canopen::syncInterval = std::chrono::milliseconds(std::stoi(std::string(argv[1])));
   auto chainDesc = canopen::parseChainDescription("single_device.yaml");
   canopen::initChainMap(chainDesc);
 
-  // initialize CAN device driver:
+  std::cout << "1" << std::endl;
+
   if (!canopen::openConnection("/dev/pcan32")) {
     std::cout << "Cannot open CAN device; aborting." << std::endl;
     return -1;
   } 
-  canopen::initNMT();
+
+  std::cout << "2" << std::endl;
   canopen::initListenerThread();
-  std::cout << "1 - hi" << std::endl;
+  std::cout << "3" << std::endl;
   canopen::initIncomingPDOProcessorThread();
-  std::cout << "2 - hi" << std::endl;
+  std::cout << "4" << std::endl;
+  std::this_thread::sleep_for(std::chrono::seconds(2));
   canopen::initMasterThread();
-  std::cout << "3 - hi" << std::endl;
+  std::cout << "5" << std::endl;
+
+  canopen::initNMT();
+  for (auto it : canopen::chainMap) 
+    it.second->CANopenInit();
 
   // client_thread simulates callback invocations from a client:
   std::thread client_thread(clientFunc);

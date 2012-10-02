@@ -7,66 +7,33 @@
 #include "canopenmaster.h"
 
 namespace canopen {
-
-  std::chrono::milliseconds sync_deltaT_msec;
-  std::map<std::string, Chain*> chainMap;
-
-  void initChainMap(std::vector<ChainDescription> chainDesc) {
-    for (auto c : chainDesc) {
-      std::cout << "init chain: " << c.name << std::endl;
-      chainMap[c.name] = new Chain(c, sync_deltaT_msec);
-    }
-  }
-
+ 
   void masterFunc() {
-    
-    // send out to CAN bus at specified rate:
     auto tic = std::chrono::high_resolution_clock::now();
-    bool any_SendPosActive;
-    bool noSyncYet = true;
-
-    std::cout << "anysendposactive? " << any_SendPosActive << std::endl;
+    // sendSync(syncInterval); // todo: check if this pre-sync is necessary
+    // sendSync(syncInterval);
 
     while (true) {
       tic = std::chrono::high_resolution_clock::now();
+      sendSync();
 
-
-      // std::cout << "SYNC active? " << any_SendPosActive << std::endl;
-
-      any_SendPosActive = false;
-      for (auto chain : chainMap) 
-	if (chain.second->sendPosActive_)
-	  any_SendPosActive = true;
-
-      if (any_SendPosActive && noSyncYet) {
-	noSyncYet = false;
-	for (int i=0; i<2; i++) {
-	  sendSync();
-	  std::this_thread::sleep_for(sync_deltaT_msec);
-	}
+      // PDOs are sent to all chains every SYNC cycle:
+      for (auto chain : chainMap) {
+	chain.second->updateDesiredPos();
+	chain.second->sendPos();
       }
 
-      // send PDOs to CAN bus (if chain has sendPosActive_==true):
-      for (auto chain : chainMap) 
-	if (chain.second->sendPosActive_) 
-	  chain.second->sendPos();
-      
-      if (any_SendPosActive) {
-	std::cout << "SYNC" << std::endl;
-	sendSync();
-      }
-
-      while (std::chrono::high_resolution_clock::now() < tic + sync_deltaT_msec) {
+      // SDOs are only sent in the remaining time of a SYNC cycle:
+      while (std::chrono::high_resolution_clock::now() < tic + syncInterval - std::chrono::microseconds(100)) {
 	// fetch a message from the outgoingMsgQueue and send to CAN bus:
 	if (outgoingMsgQueue.size() > 0) {
 	  outgoingMsgQueue.front().writeCAN(true); 
 	  outgoingMsgQueue.pop();
 	}
-	std::this_thread::sleep_for(std::chrono::microseconds(10)); 
+	std::this_thread::sleep_for(std::chrono::microseconds(1)); 
       }
-
-      // std::cout << ((std::chrono::high_resolution_clock::now()-tic)-sync_deltaT_msec).count() << std::endl;
-      tic = std::chrono::high_resolution_clock::now();
+      while (std::chrono::high_resolution_clock::now() < tic + syncInterval)
+	std::this_thread::sleep_for(std::chrono::microseconds(1)); 
     }
   }
 
@@ -78,10 +45,11 @@ namespace canopen {
   }
 
   void incomingPDOProcessorFunc() {
+    // from chainMap build a map id2chain:
     std::map<uint16_t, std::string> id2chain;
     for (auto chain : chainMap)
       for (auto device : chain.second->devices_)
-	id2chain[device.CANid_] = chain.second->alias_;
+	id2chain[device->CANid_] = chain.second->alias_;
 
     std::cout << "MAP: " << std::endl;
     for (auto it : id2chain)
@@ -91,8 +59,11 @@ namespace canopen {
       if (incomingPDOs.size()>1) { // todo: change to ">0" as soon as queue is thread-safe
 	Message m = incomingPDOs.front();
 	incomingPDOs.pop();
-	chainMap[ id2chain[m.nodeID_] ]->updateStatusWithIncomingPDO(m);
-	// fetching can be arbitrarily fast:
+	std::cout << "NodeID: " << (int) m.nodeID_ << std::endl;
+	if (id2chain.find(m.nodeID_) != id2chain.end())
+	  chainMap[ id2chain[m.nodeID_] ]->update(m);
+	else
+	  std::cout << "Key " << m.nodeID_ << " not found!" << std::endl;
 	std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
       }
     }

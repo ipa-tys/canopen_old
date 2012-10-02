@@ -23,7 +23,8 @@ namespace canopen {
   void initNMT();
   void setSyncInterval(uint16_t deviceID,
 		       std::chrono::milliseconds syncInterval);
-  void sendSync(std::chrono::milliseconds syncInterval); 
+  void sendSync(std::chrono::milliseconds syncInterval=
+		std::chrono::milliseconds(0)); 
   // status functions: syntactic sugar for statusword & controlword
   inline Message* getStatus(uint16_t deviceID) {
     return sendSDO(deviceID, "statusword"); }
