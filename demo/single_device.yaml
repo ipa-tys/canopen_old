@@ -1,5 +1,5 @@
 - name: chain1
   devices:
     - name: joint1
-      id: 12
+      id: 8
       bus: /dev/pcan32

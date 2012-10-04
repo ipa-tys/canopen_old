@@ -119,12 +119,12 @@ namespace canopen {
     }
 
     inline void update(Message m) {
-      if (m.contains("position_actual_value")) {
-	std::cout << "Timestamp: "
-		  << std::chrono::duration_cast<std::chrono::milliseconds>(m.timeStamp_).count()
-		  << std::endl;
-	getChainState().print();
-      }
+      //if (m.contains("position_actual_value")) {
+	// std::cout << "Timestamp: "
+	//	  << std::chrono::duration_cast<std::chrono::milliseconds>(m.timeStamp_).count()
+	//	  << std::endl;
+	//getChainState().print();
+      //}
       deviceMap_[m.nodeID_]->update(m);
       if (!initialized_) {
 	bool allInitialized = true;

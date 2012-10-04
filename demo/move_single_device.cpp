@@ -53,7 +53,7 @@ int main(int argc, char *argv[]) {
     canopen::sendSync(syncInterval);
     if (speedFactor != 0) {
       canopen::sendPos(deviceID, pos);
-      pos += speedFactor * M_PI / 3600.0;
+      pos +=  (0.05 * M_PI / 3600.0) * ((double) speedFactor);
     }
   }
    

@@ -16,20 +16,9 @@ int main(int argc, char *argv[]) {
  
   // initialize listener thread:
   canopen::initListenerThread();    
-
-  // put NMT and 402 state machines for device  to operational:
-  canopen::faultReset(deviceID);
   canopen::initNMT();
-  if (!canopen::initDevice(deviceID, std::chrono::milliseconds(10))) { 
-    std::cout << "Device could not be initialized; aborting." << std::endl;
-    return -1;
-  } 
-
+  canopen::setSyncInterval(deviceID, std::chrono::milliseconds(10));
+  canopen::setMotorState(deviceID, "operation_enable");
   canopen::homing(deviceID);
-
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-  double pos = canopen::getPos(deviceID);
-  std::cout << "Pos: " << pos << std::endl;
-
 }
