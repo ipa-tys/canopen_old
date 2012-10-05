@@ -32,7 +32,9 @@ namespace canopen {
 		  uint16_t CANid):
     alias_(alias), CANbus_(CANbus), CANid_(CANid),
       actualPos_(0), desiredPos_(0), actualVel_(0), desiredVel_(0),
-      initialized_(false), timeStamp_( std::chrono::microseconds(0) ) {}
+      initialized_(false),
+      timeStamp_msec_(std::chrono::milliseconds(0)),
+      timeStamp_usec_(std::chrono::microseconds(0)) {}
     
     void CANopenInit();
     void update(Message m);
@@ -49,7 +51,8 @@ namespace canopen {
     double desiredPos_; // unit = rad
     double actualVel_; // unit = rad/sec
     double desiredVel_; // unit = rad/sec
-    std::chrono::microseconds timeStamp_; 
+    std::chrono::milliseconds timeStamp_msec_; 
+    std::chrono::microseconds timeStamp_usec_; 
 
     std::string alias_;
     std::string CANbus_;

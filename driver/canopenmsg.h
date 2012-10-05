@@ -13,7 +13,6 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <thread>
-
 #include <iostream>
 #include <string>
 #include <libpcan.h>
@@ -24,14 +23,11 @@
 #include <pwd.h>
 #include <fstream>
 
-
 #include "canopen_internal.h"
-
 
 namespace canopen {
 
   extern bool using_master_thread;
- 
 
   class EDSDict {
   public:
@@ -90,7 +86,8 @@ namespace canopen {
     std::string alias_; // entry into EDSDict, or PDODict, depending on message
     std::vector<int32_t> values_;
 
-    std::chrono::microseconds timeStamp_;
+    std::chrono::microseconds timeStamp_usec;
+    std::chrono::milliseconds timeStamp_msec;
 
     std::string createMsgHash();
     std::string createMsgHash(TPCANMsg m);
