@@ -32,7 +32,7 @@ namespace canopen {
 	double deltaTime_double = static_cast<double>
 	  (deltaTime_msec.count()*1000 + deltaTime_usec.count()) * 0.000001;
 	
-	std::cout << deltaTime_double << std::endl;
+	// std::cout << deltaTime_double << std::endl;
 
 	// std::chrono::microseconds deltaTime( m.timeStamp_ - timeStamp_ );
 	// double deltaTime_double = static_cast<double>(deltaTime.count()) * 0.000001;
