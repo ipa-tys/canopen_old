@@ -106,8 +106,22 @@ namespace canopen {
     }
 
     inline void setVel(std::vector<double> velocities) {
-      for (int i=0; i<velocities.size(); i++)
-	devices_[i]->setVel(velocities[i]);  }
+      if (!fault_) {
+	for (int i=0; i<velocities.size(); i++)
+	  devices_[i]->setVel(velocities[i]);  
+      }
+    }
+
+    inline void recover() {
+      canopen::pendingSDOReplies.clear(); // todo: check
+      for (auto device : devices_) {
+	if (device->fault_) {
+	  canopen::sendSDO(device->CANid_, "controlword", "disable_voltage");
+	  setMotorState(device->CANid_, "operation_enable");
+	}
+      }
+	
+    }
 
     inline ChainState getChainState() {
       ChainState cs;
@@ -129,6 +143,15 @@ namespace canopen {
 	//	  << std::endl;
 	//getChainState().print();
       //}
+      bool anyFault = false;
+      for (auto device : devices_) 
+	if (device->fault_) anyFault = true;
+      if (anyFault) {
+	fault_ = true;
+	for (auto device : devices_)
+	  device->setVel(0);
+      }
+
       deviceMap_[m.nodeID_]->update(m);
       if (!initialized_) {
 	bool allInitialized = true;

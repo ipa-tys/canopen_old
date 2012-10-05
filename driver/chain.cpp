@@ -49,16 +49,15 @@ namespace canopen {
     }
 
     if (m.contains("statusword")) {
-      std::cout << "statusword!" << std::endl;
       if (m.checkForConstant("statusword", "fault_ds402")) { // fault_ds402
 	fault_ = true;
 	std::cout << "Device " << CANid_ << " fault!" << std::endl;
 	setVel(0); // set desired velocity to 0
-	bool success = setMotorState(CANid_, "operation_enable");
-	std::cout << "Auto recovery success? " << success << std::endl;
+	// bool success = setMotorState(CANid_, "operation_enable");
+	// std::cout << "Auto recovery success? " << success << std::endl;
       } else {
 	fault_ = false;
-      	std::cout << "Device " << CANid_ << " ok" << std::endl;
+      	// std::cout << "Device " << CANid_ << " ok" << std::endl;
       }
     }
 

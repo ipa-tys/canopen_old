@@ -112,6 +112,7 @@ namespace canopen {
 
   extern std::queue<Message> outgoingMsgQueue; // todo: only for debugging
   extern std::queue<Message> incomingPDOs;
+  extern std::map<std::string, Message* > pendingSDOReplies; // todo: check
 
 }
 
