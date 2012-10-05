@@ -71,6 +71,7 @@ namespace canopen {
     static Message* readCAN(bool blocking=true);
     Message* waitForSDOAnswer();
     bool checkForConstant(std::string constName); // only for SDOs so far
+    bool checkForConstant(std::string alias, std::string constName);
     std::vector<std::string> parseFlags();
 
     bool contains(std::string indexAlias); 

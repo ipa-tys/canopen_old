@@ -71,7 +71,7 @@ namespace canopen {
       Message* m = getStatus(deviceID);
       if (m->checkForConstant("operation_enable"))
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m->checkForConstant("fault_ds402")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
@@ -96,7 +96,7 @@ namespace canopen {
       m = getStatus(deviceID);
       if (m->checkForConstant("switched_on"))
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m->checkForConstant("fault_ds402")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
@@ -123,7 +123,7 @@ namespace canopen {
       m = getStatus(deviceID);
       if (m->checkForConstant("ready_to_switch_on"))
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m->checkForConstant("fault_ds402")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
@@ -138,7 +138,7 @@ namespace canopen {
       Message* m = getStatus(deviceID);
       if (m->checkForConstant("switch_on_disabled")) 
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m->checkForConstant("fault_ds402")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }

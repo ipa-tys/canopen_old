@@ -251,6 +251,14 @@ namespace canopen {
     return (value & mask) == constValue;
   }
 
+  // PDO version of checkForConstant:
+  bool Message::checkForConstant(std::string alias, std::string constName) { // todo: test!
+    uint32_t value = get(alias);
+    uint32_t constValue = eds.getConst(alias, constName);
+    uint32_t mask = eds.getMask(alias, constName);
+    return (value & mask) == constValue;
+  }
+
   // void Message::writeCAN(bool writeMode, bool directlyToCanBus) {
   void Message::writeCAN(bool directlyToCanBus) {
     if (using_master_thread && !directlyToCanBus && 

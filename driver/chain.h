@@ -32,7 +32,7 @@ namespace canopen {
 		  uint16_t CANid):
     alias_(alias), CANbus_(CANbus), CANid_(CANid),
       actualPos_(0), desiredPos_(0), actualVel_(0), desiredVel_(0),
-      initialized_(false),
+      initialized_(false), fault_(false),
       timeStamp_msec_(std::chrono::milliseconds(0)),
       timeStamp_usec_(std::chrono::microseconds(0)) {}
     
@@ -58,6 +58,7 @@ namespace canopen {
     std::string CANbus_;
     uint16_t CANid_;
     bool initialized_;
+    bool fault_;
   };
 
   struct ChainState {
