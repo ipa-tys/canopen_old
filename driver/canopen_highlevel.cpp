@@ -8,6 +8,7 @@ namespace canopen {
     h = LINUX_CAN_Open(devName.c_str(), O_RDWR);
     if (!h) return false;
     errno = CAN_Init(h, CAN_BAUD_500K, CAN_INIT_TYPE_ST);
+    // errno = CAN_Init(h, CAN_BAUD_250K, CAN_INIT_TYPE_ST);
     return true;
   }
   
