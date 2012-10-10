@@ -23,3 +23,9 @@ install (FILES
   canopenmaster.h
   DESTINATION include)
 
+INSTALL(CODE "FILE(MAKE_DIRECTORY ~/.canopen)")
+install (FILES
+  constants.csv
+  indices.csv
+  PDOs.csv
+  DESTINATION ~/.canopen)
