@@ -20,7 +20,7 @@ interactiveHoming.o: interactiveHoming.cpp
 	g++ -c interactiveHoming.cpp -std=c++0x
 
 homing: homing.o
-	g++ homing.o -o homing -lpthread -lcanopen -lpcan
+	g++ homing.o -o homing -lpthread -lcanopen -lpcan -lgcov 
 
 homing.o: homing.cpp
 	g++ -c homing.cpp -std=c++0x
@@ -51,4 +51,3 @@ canopenmaster_multiple_devices.o: canopenmaster_multiple_devices.cpp
 
 clean:
 	\rm -f *.o *~ getpos interactiveHoming homing move_single_device multiple_devices canopenmaster_single_device canopenmaster_multiple_devices 
-

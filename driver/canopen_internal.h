@@ -1,3 +1,7 @@
+// Copyright (c) 2012 Fraunhofer Institute
+// for Manufacturing Engineering and Automation (IPA)
+// See the file license.txt for copying permission.
+
 #ifndef CANOPENINTERNAL_H
 #define CANOPENINTERNAL_H
 
