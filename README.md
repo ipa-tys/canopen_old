@@ -31,7 +31,7 @@ Prerequisites:
 --------------
 * The only compatible CAN device driver so far is the
 [Peak CAN driver](http://www.peak-system.com/fileadmin/media/linux/index.htm).
-* A compiler with good support for C++11, e.g. gcc 2.6 or newer (the default compiler
+* A compiler with good support for C++11, e.g. gcc 4.6 or newer (the default compiler
 in Ubuntu 11.04 or newer)
 
 Feedback / Roadmap:
