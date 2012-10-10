@@ -1,7 +1,9 @@
 CANopen C++ library
 ===================
 &copy; 2012 Fraunhofer Institute for Manufacturing Engineering and Automation (IPA)
+
 Author: tobias.sing, email: tobias.sing@ipa.fhg.de
+
 See the file "license.txt" for copying permission.
 
 Description:
@@ -41,9 +43,12 @@ To date, the library has only been tested with PRL, PRH, and ERB (Powerball) mod
 [Schunk](http://www.schunk.com). So far, only the interpolated position (IP) mode has been
 implemented.
 
+Note to manufacturers interested in a free and open-source API for their hardware:
+We would appreciate devices (actors and sensors) for testing at any time.
+
 Bugs and feature tracking:
 * [Milestone 1](http://www.care-o-bot-research.org/trac/query?milestone=CanOpen+MS1) (alpha version)
-* [Milestone 2]http://www.care-o-bot-research.org/trac/query?milestone=CanOpen+MS2 (beta version)
+* [Milestone 2](http://www.care-o-bot-research.org/trac/query?milestone=CanOpen+MS2) (beta version)
 
 
 
