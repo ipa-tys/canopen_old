@@ -24,8 +24,8 @@ There is also a wrapper, [ros_canopen](https://github.com/ipa-tys/ros_canopen) a
 which allows using this library to control CANopen devices from within the ROS
 (Robot Operating System) framework.
 
-The [manual](https://github.com/ipa-tys/canopen/blob/master/doc/usermanual.pdf?raw=true)
-covers both the canopen library as well as the wrapper ros_canopen.
+**A [user manual](https://github.com/ipa-tys/canopen/blob/master/doc/usermanual.pdf?raw=true)
+is available which covers both the canopen library as well as the wrapper ros_canopen.**
 
 Prerequisites:
 --------------
