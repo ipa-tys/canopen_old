@@ -2,6 +2,10 @@
 // for Manufacturing Engineering and Automation (IPA)
 // See the file license.txt for copying permission.
 
+// This program performs homing (referencing) of a device.
+// See the user manual for details:
+// https://github.com/ipa-tys/canopen/blob/master/doc/usermanual.pdf?raw=true
+
 #include <canopen_highlevel.h>
 
 int main(int argc, char *argv[]) {

@@ -6,3 +6,6 @@ target_link_libraries(homing pthread canopen pcan)
 
 add_executable(move_single_device move_single_device.cpp)
 target_link_libraries(move_single_device pthread canopen pcan yaml-cpp)
+
+add_executable(sd1 sd1.cpp)
+target_link_libraries(sd1 pthread canopen pcan yaml-cpp)
