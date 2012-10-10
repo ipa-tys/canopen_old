@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Arguments:" << std::endl
       	      << "(1) device file" << std::endl
 	      << "(2) CAN deviceID" << std::endl
-	      << "e.g. './homing /dev/pcan32 12'" << std::endl;
+	      << "Example: ./homing /dev/pcan32 12" << std::endl;
     return -1;
   }
   std::string deviceFile = std::string(argv[1]);
