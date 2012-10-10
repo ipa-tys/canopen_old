@@ -21,21 +21,25 @@ Let's assume you CAN bus device file is \texttt{/dev/pcan32} and the CANopen ID 
 
 If you hear or see your device doing something, e.g. a clicking noise, or some small motions, then everything has worked out correctly and you have successfully used the {\em canopen} library! The device now assumes that its current position is $0$.
 
-Before we look at the source code of this example, let's look at the different levels of abstraction in which the {\em canopen} library can be used.
+\subsection{Examining the source code}
 
-\section{An overview of the library}
+The whole library lives within a dedicated namespace, \texttt{canopen}. 
+Therefore, you will often see this as a prefix, e.g. \texttt{canopen::openConnection}.
 
-The library can be used on two different levels:
+\section{Three abstraction levels of the library: raw, composite, managed}
+
+The {\em canopen} library can be used on three different levels of abstraction (which can also be mixed with each other):
 \begin{itemize}
-\item By directly writing CANopen messages to the bus using the API functions provide in \texttt{canopen\_highlevel.h}.
-\item On a higher level, there is also an implementation of a master thread with functionality to manage device objects and object groups.
+\item {\bf ``Raw:''} By directly writing CANopen messages (NMT, SDO, PDO, SYNC) using the API functions \texttt{canopen::sendNMT}, \texttt{canopen::sendSDO}, \texttt{canopen::sendSDO}, \texttt{canopen::sendSync}, respectively. The function \texttt{canopen::sendSDO} is written such that its return value is the SDO message that was sent back from the device as a reply to the outgoing SDO, ``\texttt{replyMessage = sendSDO(requestMessage)}''.
+\item {\bf ``Composite:''} By using higher-level functions that automate certain process requiring exchange of multiple CANopen messages. For example, the function \texttt{canopen::setMotorState} triggers the device to perform state transitions that will lead the motor state machine to the desired target state irrespective of the starting state.
+\item {\bf ``Managed:''} On an even higher level, you can use classes that automate much functionality that is needed when controlling manipulators. In this setting, there is one object of class \texttt{canopen::Device} per actual CANopen device, and one object of class \texttt{canopen::Chain} for each group of devices that are expected to work together, such as a robotic arm, or a tray with multiple degrees of freedom.
 \end{itemize}
 
-We first describe the use of API functions to write directly to the CAN bus. This chapter assumes that you have completely all the installation steps described in Chapter \ref{installation}, including the building of the examples in the \texttt{demo} folder.
+In the next sections, we will look at the functionality provided on the {\em raw}, {\em composite}, and {\em managed} level, one after each other.
 
-\section{Using API functions to directly write to the CAN bus}
+\section{The {\em raw} level: sending individual CANopen messages}
 
-The whole library lives within a dedicated namespace, \texttt{canopen}. Therefore, you will often see this as a prefix, e.g. \texttt{canopen::openConnection}.
+
 
 \subsection{Getting started: Communicating with a single device (demo/single\_device.cpp)}
 
