@@ -2,7 +2,7 @@ CANopen C++ library
 ===================
 &copy; 2012 Fraunhofer Institute for Manufacturing Engineering and Automation (IPA)
 
-Author: tobias.sing, email: tobias.sing@ipa.fhg.de
+Author: Tobias Sing, email: tobias.sing@ipa.fhg.de
 
 See the file "license.txt" for copying permission.
 
