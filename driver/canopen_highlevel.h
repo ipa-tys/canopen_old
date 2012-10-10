@@ -1,4 +1,6 @@
-// API functions for CANopen communication
+// Copyright (c) 2012 Fraunhofer Institute
+// for Manufacturing Engineering and Automation (IPA)
+// See the file license.txt for copying permission.
 
 #ifndef CANOPENHIGHLEVEL_H
 #define CANOPENHIGHLEVEL
