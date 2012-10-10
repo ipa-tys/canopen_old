@@ -49,15 +49,21 @@ You will need the following free tools, which are available for all operating sy
 \item \texttt{cd canopen}
 \item Now create a directory for building the code: \texttt{mkdir build}
 \item \texttt{cd build}
-\item \texttt{cmake ..}
+\item Prepare the make files: \texttt{cmake ..}
 \item \texttt{make}
-\item \texttt{sudo make install}
+\item (Optionally:) \texttt{sudo make install}
 \item Test if the build was successful:
 \begin{itemize} 
-\item \texttt{cd demo}
+\item \texttt{cd examples}
 \item \texttt{./homing}
-\item This should give the output:\\
-\texttt{Please call the program with the CAN deviceID, e.g. './homing 12'}
+\item This should give the output:
+{\scriptsize
+\begin{verbatim}
+Arguments:
+(1) device file
+(2) CAN deviceID
+e.g. './homing /dev/pcan32 12'
+\end{verbatim}}
 \end{itemize}
 \end{itemize}
 
