@@ -8,8 +8,6 @@ ADD_LIBRARY( canopen STATIC
   canopenmaster.cpp
   )
 
-# target_link_libraries(canopen pthread pcan yaml-cpp)
-
 install (TARGETS canopen 
 #  LIBRARY DESTINATION lib)
   ARCHIVE DESTINATION lib)
@@ -23,7 +21,7 @@ install (FILES
   canopenmaster.h
   DESTINATION include)
 
-INSTALL(CODE "FILE(MAKE_DIRECTORY ~/.canopen)")
+install (CODE "FILE(MAKE_DIRECTORY ~/.canopen)")
 install (FILES
   constants.csv
   indices.csv
