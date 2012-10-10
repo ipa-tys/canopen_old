@@ -29,18 +29,36 @@ Currently, the library has only been tested with the PCAN-USB CAN interface for 
     \end{itemize}
   \end{itemize}
 
-  \section{ROS-indendent IPA CANopen library}
+ \section{ROS-indendent CANopen library}
 
-  \begin{itemize}
-    \item \texttt{git clone \url{git://github.com/ipa-tys/canopen.git}}
-    \item \texttt{cd driver}
-    \item \texttt{make}
-    \item \texttt{sudo make install}. Currently, this copies the archive \texttt{libcanopen.a} into \texttt{/user/lib}, the header files \texttt{canopen\_internal.h}, \texttt{canopenmsg.h}, \texttt{canopen\_highlevel.h}, \texttt{chain.h}, and \texttt{canopenmaster.h} into \texttt{/usr/include}. Files containing definitions of the CANopen standard (\texttt{indices.csv}, \texttt{constants.csv}, \texttt{PDOs.csv}) are copied into \texttt{~/.canopen}.
-    \item Now, build the demos: \texttt{cd ../demo}
-      \item \texttt{make}.
-    \item Test if the installation was successful: \texttt{./single\_device}. This should give the output:
-      {\scriptsize
-\begin{verbatim} Please call the program with the CAN deviceID,e.g. './single\_device 12'\end{verbatim}}
+\subsection{Prerequisites}
+
+You will need the following free tools, which are available for all operating systems:
+\begin{itemize}
+\item {\em CMake} (to manage the build process). It is pre-installed on many *nix operating systems. Otherwise, you need to install it first, e.g. in Ubuntu:
+\texttt{sudo apt-get install cmake}
+\item {\em git} (to download the sources from github). In Ubuntu, it can be installed with: \texttt{sudo apt-get install git}
+\item A C++ compiler with good support for the C++11 standard, e.g. {\em gcc} version 2.6 or higher (default in Ubuntu versions 11.04 or higher).
+\end{itemize}
+
+\subsection{Installation}
+
+\begin{itemize}
+\item Go to a directory in which you want to create the {\em canopen} source directory.
+\item \texttt{git clone \url{git://github.com/ipa-tys/canopen.git}}
+\item \texttt{cd canopen}
+\item Now create a directory for building the code: \texttt{mkdir build}
+\item \texttt{cd build}
+\item \texttt{cmake ..}
+\item \texttt{make}
+\item \texttt{sudo make install}
+\item Test if the build was successful:
+\begin{itemize} 
+\item \texttt{cd demo}
+\item \texttt{./homing}
+\item This should give the output:\\
+\texttt{Please call the program with the CAN deviceID, e.g. './homing 12'}
+\end{itemize}
 \end{itemize}
 
 \section{IPA CANopen ROS package}
