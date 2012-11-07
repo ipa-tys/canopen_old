@@ -20,18 +20,16 @@ namespace canopen {
   // general init and communication commands:
   bool openConnection(std::string devName); // initialize device driver
   void closeConnection();
-  void listenerFunc();
-  void initListenerThread(); // initialize listener thread
   void initNMT();
   void setSyncInterval(uint16_t deviceID,
 		       std::chrono::milliseconds syncInterval);
   void sendSync(std::chrono::milliseconds syncInterval=
 		std::chrono::milliseconds(0)); 
   // status functions: syntactic sugar for statusword & controlword
-  inline Message* getStatus(uint16_t deviceID) {
+  inline Message getStatus(uint16_t deviceID) {
     return sendSDO(deviceID, "statusword"); }
   inline bool getStatus(uint16_t deviceID, std::string statusName) {
-    return sendSDO(deviceID, "statusword")->checkForConstant(statusName); }
+    return sendSDO(deviceID, "statusword").checkForConstant(statusName); }
   bool waitForStatus
     (uint16_t deviceID, std::string statusName,
      std::chrono::milliseconds timeout=std::chrono::milliseconds(100));

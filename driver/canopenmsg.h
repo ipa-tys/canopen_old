@@ -58,10 +58,13 @@ namespace canopen {
 
   class Message {  // abstract representation of CANopen messages
   public:
+    Message() {}; // todo: initialize members
     Message(TPCANRdMsg m);
     // constructor for messages coming in from bus (TPCANRdMsg)
     
-    Message(uint8_t nodeID, std::string alias, uint32_t value=0);
+    Message(uint8_t nodeID, std::string alias);
+    Message(uint8_t nodeID, std::string alias, uint32_t value);
+    Message(uint8_t nodeID, std::string alias, std::string param);
     // user-constructed non-PDO message
     
     Message(uint8_t nodeID, std::string alias, std::vector<int32_t> values);
@@ -72,8 +75,7 @@ namespace canopen {
     // CAN bus, but instead are put into the queue "outgoingMsgQueue" which
     // is a global variable within the "canopen" namespace
 
-    static Message* readCAN(bool blocking=true);
-    Message* waitForSDOAnswer();
+    Message waitForSDOreply();
     bool checkForConstant(std::string constName); // only for SDOs so far
     std::vector<std::string> parseFlags();
 
@@ -94,7 +96,7 @@ namespace canopen {
     std::chrono::milliseconds timeStamp_msec;
 
     std::string createMsgHash();
-    std::string createMsgHash(TPCANMsg m);
+    // std::string createMsgHash(TPCANMsg m);
     
     // todo (optional): message caching; data changing of existing messages (for max. efficiency)
     void debugPrint(); // only for debug/testing
@@ -104,14 +106,17 @@ namespace canopen {
   
   // wrapper functions for sending SDO, PDO, and NMT messages
   // sendSDO calls deliver the device response as return value: 
-  Message* sendSDO(uint16_t deviceID, std::string alias, std::string param="");
-  Message* sendSDO(uint16_t deviceID, std::string alias, uint32_t value);
+  Message sendSDO(uint16_t deviceID, std::string alias, std::string param="");
+  Message sendSDO(uint16_t deviceID, std::string alias, uint32_t value);
 
   void sendNMT(std::string param);
   void sendPDO(uint16_t deviceID, std::string alias, std::vector<int32_t> data);
 
   // only for debug/testing purposes:
   void debug_show_pendingSDOReplies(); 
+
+  void listenerFunc();
+  void initListenerThread(); // initialize listener thread
 
   extern std::queue<Message> outgoingMsgQueue; // todo: only for debugging
   extern std::queue<Message> incomingPDOs;
