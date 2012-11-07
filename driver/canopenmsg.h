@@ -65,8 +65,6 @@ namespace canopen {
     Message(uint8_t nodeID, std::string alias);
     Message(uint8_t nodeID, std::string alias, uint32_t value);
     Message(uint8_t nodeID, std::string alias, std::string param);
-    // user-constructed non-PDO message
-    
     Message(uint8_t nodeID, std::string alias, std::vector<int32_t> values);
     // user-constructed PDO message
     

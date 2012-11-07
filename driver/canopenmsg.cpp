@@ -204,7 +204,6 @@ namespace canopen {
   // constructor for messages coming in from bus (TPCANRdMsg):
   Message::Message(TPCANRdMsg m) {  
     if (m.Msg.ID >= 0x180 && m.Msg.ID <= 0x4ff) { // incoming PDOs
-      // std::cout << "Time: " << dwTime_ << "  " << wUsec_ << std::endl;
       timeStamp_msec = std::chrono::milliseconds(m.dwTime);
       timeStamp_usec = std::chrono::microseconds(m.wUsec);
 
@@ -227,28 +226,22 @@ namespace canopen {
 	  ttemp += (static_cast<uint32_t>(m.Msg.DATA[pos]) << (j*8));
 	  pos++;
 	}
-	int32_t *ittemp = reinterpret_cast<int32_t*>(&ttemp); // todo: mem cleanup
+	
+	int32_t *ittemp = reinterpret_cast<int32_t*>(&ttemp);
+	// todo: mem cleanup necessary?? (don't think so)
 	values_[i] = *ittemp;
       }
-      incomingPDOs.push(*this);
+      incomingPDOs.push(*this);  // todo: ok?
 
     } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
       uint16_t index = m.Msg.DATA[1] + (m.Msg.DATA[2]<<8);
       uint8_t subindex = m.Msg.DATA[3];
       nodeID_ = m.Msg.ID - 0x580;
       alias_ =  eds.getAlias(index, subindex);
-      values_.push_back(m.Msg.DATA[4] + (m.Msg.DATA[5]<<8) + (m.Msg.DATA[6]<<8) + (m.Msg.DATA[7]<<8));
-      // std::string ss = createMsgHash();
-      // pendingSDOReplies[ss] = this;
+      values_.push_back(m.Msg.DATA[4] + (m.Msg.DATA[5]<<8)
+			+ (m.Msg.DATA[6]<<8) + (m.Msg.DATA[7]<<8));
     }
   }
-
-  /* std::string Message::createMsgHash(TPCANMsg m) { 
-    std::string ss = std::to_string(nodeID_) + "_" +
-      std::to_string(m.DATA[1] + (m.DATA[2]<<8)) + "_" +
-      std::to_string(m.DATA[3]);
-    return ss;
-    }*/
 
   std::string Message::createMsgHash() { // COBID_index_subindex (decimal)
     uint16_t index = eds.getIndex(alias_);
@@ -274,7 +267,7 @@ namespace canopen {
       // note: conditions (3) and (4) mean that SYNC and PDOs messages are never queued,
       // but rather always written directly to the bus when writeCAN is called
       // to ensure rigid timing
-      outgoingMsgQueue.push(*this);
+      outgoingMsgQueue.push(*this); // todo: check if this correct and not bad style?
     } else {
       TPCANMsg msg;
       for (int i=0; i<8; i++) msg.DATA[i]=0;
@@ -342,14 +335,8 @@ namespace canopen {
 	  uint32_t v = values_[0];
 	  for (int i=0; i<len; i++) msg.DATA[4+i] = static_cast<uint8_t>( (v >> (8*i)) & 0xFF );
 	} 
-
-	// put on multiset
-	// std::string ss = createMsgHash(msg);
-	// pendingSDOReplies.insert(std::make_pair(ss, nullptr));
-	// std::cout << "Message hash: " << ss << std::endl;
-
 	CAN_Write(h, &msg);
-      }  // end SDO
+      } 
 
     }
   }
@@ -384,7 +371,7 @@ namespace canopen {
 
     }
      
-    Message m = SDOreplies[ss]; // copy constructor
+    Message m( SDOreplies[ss] );
     SDOreplies.erase(ss);
     return m;
   } 
