@@ -12,7 +12,10 @@ namespace canopen {
   HANDLE h;
   EDSDict eds;
   PDODict pdo;
-  std::map<std::string, Message* > pendingSDOReplies; // todo: make thread-safe
+
+  // std::map<std::string, Message* > pendingSDOReplies; // todo: make thread-safe
+  // todo: unordered map
+  std::map<std::string, Message > SDOreplies;
 
   bool queue_incoming_PDOs = true; // todo: implement its use; only queue PDOs when true
   std::queue<Message> incomingPDOs; // todo: make thread_safe
@@ -181,9 +184,17 @@ namespace canopen {
   // -------------- Message member functions:
 
   // user-constructed non-PDO message:
+  Message::Message(uint8_t nodeID, std::string alias):
+    nodeID_(nodeID), alias_(alias) {}
+
   Message::Message(uint8_t nodeID, std::string alias, uint32_t value):
     nodeID_(nodeID), alias_(alias) {
     values_.push_back(value);
+  }
+
+  Message::Message(uint8_t nodeID, std::string alias, std::string param):
+    nodeID_(nodeID), alias_(alias) {
+    values_.push_back( eds.getConst(alias, param) );
   }
 
   // user-constructed PDO message:
@@ -193,7 +204,6 @@ namespace canopen {
   // constructor for messages coming in from bus (TPCANRdMsg):
   Message::Message(TPCANRdMsg m) {  
     if (m.Msg.ID >= 0x180 && m.Msg.ID <= 0x4ff) { // incoming PDOs
-      // std::cout << "Time: " << dwTime_ << "  " << wUsec_ << std::endl;
       timeStamp_msec = std::chrono::milliseconds(m.dwTime);
       timeStamp_usec = std::chrono::microseconds(m.wUsec);
 
@@ -216,27 +226,21 @@ namespace canopen {
 	  ttemp += (static_cast<uint32_t>(m.Msg.DATA[pos]) << (j*8));
 	  pos++;
 	}
-	int32_t *ittemp = reinterpret_cast<int32_t*>(&ttemp); // todo: mem cleanup
+	
+	int32_t *ittemp = reinterpret_cast<int32_t*>(&ttemp);
+	// todo: mem cleanup necessary?? (don't think so)
 	values_[i] = *ittemp;
       }
-      incomingPDOs.push(*this);
+      incomingPDOs.push(*this);  // todo: ok?
 
     } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
       uint16_t index = m.Msg.DATA[1] + (m.Msg.DATA[2]<<8);
       uint8_t subindex = m.Msg.DATA[3];
       nodeID_ = m.Msg.ID - 0x580;
       alias_ =  eds.getAlias(index, subindex);
-      values_.push_back(m.Msg.DATA[4] + (m.Msg.DATA[5]<<8) + (m.Msg.DATA[6]<<8) + (m.Msg.DATA[7]<<8));
-      std::string ss = createMsgHash();
-      pendingSDOReplies[ss] = this;
+      values_.push_back(m.Msg.DATA[4] + (m.Msg.DATA[5]<<8)
+			+ (m.Msg.DATA[6]<<8) + (m.Msg.DATA[7]<<8));
     }
-  }
-
-  std::string Message::createMsgHash(TPCANMsg m) { 
-    std::string ss = std::to_string(nodeID_) + "_" +
-      std::to_string(m.DATA[1] + (m.DATA[2]<<8)) + "_" +
-      std::to_string(m.DATA[3]);
-    return ss;
   }
 
   std::string Message::createMsgHash() { // COBID_index_subindex (decimal)
@@ -263,7 +267,7 @@ namespace canopen {
       // note: conditions (3) and (4) mean that SYNC and PDOs messages are never queued,
       // but rather always written directly to the bus when writeCAN is called
       // to ensure rigid timing
-      outgoingMsgQueue.push(*this);
+      outgoingMsgQueue.push(*this); // todo: check if this correct and not bad style?
     } else {
       TPCANMsg msg;
       for (int i=0; i<8; i++) msg.DATA[i]=0;
@@ -331,26 +335,17 @@ namespace canopen {
 	  uint32_t v = values_[0];
 	  for (int i=0; i<len; i++) msg.DATA[4+i] = static_cast<uint8_t>( (v >> (8*i)) & 0xFF );
 	} 
-
-	// put on multiset
-	std::string ss = createMsgHash(msg);
-	pendingSDOReplies.insert(std::make_pair(ss, nullptr));
-	// std::cout << "Message hash: " << ss << std::endl;
-
 	CAN_Write(h, &msg);
-      }  // end SDO
+      } 
 
     }
   }
 
   void debug_show_pendingSDOReplies() {
-    std::cout << "DEBUG. Pending_queue_size = " << pendingSDOReplies.size() << std::endl;
+    std::cout << "DEBUG. Pending_queue_size = " << SDOreplies.size() << std::endl;
     
-    for (auto it : pendingSDOReplies) {
-      std::cout << it.first;
-      if (it.second == nullptr) std::cout << "(nullptr)";
-      std::cout << ", ";
-    }
+    for (auto it : SDOreplies) 
+      std::cout << it.first << ", ";
     std::cout << std::endl;
   }
 
@@ -360,34 +355,25 @@ namespace canopen {
 	      << ", value: " << values_[0] << std::endl;
   }
 
-  Message* Message::readCAN(bool blocking) { // todo: different blocking modes
-    TPCANRdMsg m;
-    if ((errno = LINUX_CAN_Read(canopen::h, &m))) {
-      perror("receivetest: LINUX_CAN_Read()");
-      // return errno;
-    }
-    Message* msg = new Message(m);
-    return msg;
-  }
-
-  Message* Message::waitForSDOAnswer() { 
+  Message Message::waitForSDOreply() { 
     std::string ss = createMsgHash();
     auto tic = std::chrono::high_resolution_clock::now();
     bool timeout = false;
     std::chrono::milliseconds timeout_msec(1000); // todo: find good timeout duration
-    while (!timeout && pendingSDOReplies[ss] == nullptr) {
-      if (std::chrono::high_resolution_clock::now() > tic + timeout_msec)
-	timeout = true;
+
+    while (SDOreplies.find(ss) == SDOreplies.end() ) {
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+      if (std::chrono::high_resolution_clock::now() > tic + timeout_msec) {
+	SDOreplies.erase(ss);
+	throw std::runtime_error("SDO reply timeout");
+      } // todo: create dedicated subclass timeout_exception
+
     }
-    if (!timeout) {
-      Message* m = pendingSDOReplies[ss];
-      pendingSDOReplies.erase(ss);
-      return m;
-    } else {
-      pendingSDOReplies.erase(ss);
-      return nullptr;
-    }
+     
+    Message m( SDOreplies[ss] );
+    SDOreplies.erase(ss);
+    return m;
   } 
 
   bool Message::contains(std::string indexAlias) {
@@ -408,25 +394,22 @@ namespace canopen {
 
   // ------------- wrapper functions for sending SDO, PDO, and NMT messages: --
 
-  Message* sendSDO(uint16_t deviceID, std::string alias,
-		   std::string param) { 
-    Message* m;
-    if (param != "") 
-      m = new Message(deviceID, alias, eds.getConst(alias, param));
-    else 
-      m = new Message(deviceID, alias);
-    m->writeCAN();
-    Message* reply = m->waitForSDOAnswer();
-    delete m;
-    return reply;
+  Message sendSDO(uint16_t deviceID, std::string alias) {
+    Message m(deviceID, alias);
+    m.writeCAN();
+    return m.waitForSDOreply();
   }
 
-  Message* sendSDO(uint16_t deviceID, std::string alias, uint32_t value) {
-    Message* m = new Message(deviceID, alias, value);
-    m->writeCAN();
-    Message* reply = m->waitForSDOAnswer();
-    delete m;
-    return reply;
+  Message sendSDO(uint16_t deviceID, std::string alias, std::string param) {
+    Message m(deviceID, alias, param);
+    m.writeCAN();
+    return m.waitForSDOreply();
+  }
+
+  Message sendSDO(uint16_t deviceID, std::string alias, uint32_t value) {
+    Message m(deviceID, alias, value);
+    m.writeCAN();
+    return m.waitForSDOreply();
   }
 
   void sendNMT(std::string param) {
@@ -438,6 +421,30 @@ namespace canopen {
     Message(deviceID, alias, data).writeCAN();
   }
 
+
+  void listenerFunc() {
+    while (true) {
+      TPCANRdMsg m;
+      if ((errno = LINUX_CAN_Read(canopen::h, &m))) {
+	perror("LINUX_CAN_Read() error");
+	// todo: return errno;
+      }
+      Message msg(m);
+      
+      // if incoming msg is an SDO, then put it in incomingSDO hash table,
+      // so that it can be fetched by sendSDO / waitForSDOreply:
+      if (msg.values_.size() == 1)
+	SDOreplies[ msg.createMsgHash() ] = msg;
+    }
+  }
+
+  void initListenerThread() {
+    std::thread listener_thread(listenerFunc);
+    listener_thread.detach();
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  
 }
 
 // todo: PDOs

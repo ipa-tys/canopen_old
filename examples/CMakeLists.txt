@@ -3,3 +3,6 @@ target_link_libraries(homing pthread canopen pcan)
 
 add_executable(move_device move_device.cpp)
 target_link_libraries(move_device pthread canopen pcan)
+
+add_executable(memtest memtest.cpp)
+target_link_libraries(memtest pthread canopen pcan)

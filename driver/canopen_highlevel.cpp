@@ -17,19 +17,7 @@ namespace canopen {
   
   void closeConnection() { CAN_Close(h); }
   
-  void listenerFunc() {
-    TPCANRdMsg m;
-    Message* msg;
-    while (true) {
-      msg = Message::readCAN(true);
-    }
-  }
 
-  void initListenerThread() {
-    std::thread listener_thread(listenerFunc);
-    listener_thread.detach();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
 
   void initNMT() {
     // todo: check NMT state; allow device-specific NMT
@@ -70,12 +58,14 @@ namespace canopen {
   bool setMotorState(uint16_t deviceID, std::string targetState) {
     // goes shortest way in the motor state machine to the desired target state
     // todo: correct function of fault reset has not been tested yet
+    Message m;
+
     if (targetState == "operation_enable") {
       
-      Message* m = getStatus(deviceID);
-      if (m->checkForConstant("operation_enable"))
+      m = getStatus(deviceID);
+      if (m.checkForConstant("operation_enable"))
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m.checkForConstant("fault")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
@@ -91,16 +81,16 @@ namespace canopen {
 
     } else if (targetState == "switched_on") {
 
-      Message* m = getStatus(deviceID);
-      if (m->checkForConstant("switched_on")) 
+      m = getStatus(deviceID);
+      if (m.checkForConstant("switched_on")) 
 	return true;
-      if (m->checkForConstant("operation_enable")) 
+      if (m.checkForConstant("operation_enable")) 
 	setStatus(deviceID, "sm_switch_on");
 
       m = getStatus(deviceID);
-      if (m->checkForConstant("switched_on"))
+      if (m.checkForConstant("switched_on"))
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m.checkForConstant("fault")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
@@ -115,19 +105,19 @@ namespace canopen {
 
     }  else if (targetState == "ready_to_switch_on") {
 
-      Message* m = getStatus(deviceID);
-      if (m->checkForConstant("ready_to_switch_on")) 
+      m = getStatus(deviceID);
+      if (m.checkForConstant("ready_to_switch_on")) 
 	return true;
-      if (m->checkForConstant("operation_enable")) 
+      if (m.checkForConstant("operation_enable")) 
 	setStatus(deviceID, "sm_switch_on");
 
       if (getStatus(deviceID, "switched_on"))
 	setStatus(deviceID, "sm_shutdown");
      
       m = getStatus(deviceID);
-      if (m->checkForConstant("ready_to_switch_on"))
+      if (m.checkForConstant("ready_to_switch_on"))
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m.checkForConstant("fault")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
@@ -139,10 +129,10 @@ namespace canopen {
 
     }  else if (targetState == "switch_on_disabled") {
       
-      Message* m = getStatus(deviceID);
-      if (m->checkForConstant("switch_on_disabled")) 
+      m = getStatus(deviceID);
+      if (m.checkForConstant("switch_on_disabled")) 
 	return true;
-      if (m->checkForConstant("fault")) {
+      if (m.checkForConstant("fault")) {
 	setStatus(deviceID, "reset_fault_1");
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
       }
@@ -167,18 +157,18 @@ namespace canopen {
     sendSDO(deviceID, "controlword", "start_homing|enable_ip_mode");
 
     // wait for drive to start moving:
-    while (!sendSDO(deviceID, "statusword")->checkForConstant("drive_is_moving"))
+    while (!sendSDO(deviceID, "statusword").checkForConstant("drive_is_moving"))
       std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
     
     // wait for drive to stop moving:
-    while (sendSDO(deviceID, "statusword")->checkForConstant("drive_is_moving")) 
+    while (sendSDO(deviceID, "statusword").checkForConstant("drive_is_moving")) 
       std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
 
-    while (!sendSDO(deviceID, "statusword")->checkForConstant("drive_referenced")) 
+    while (!sendSDO(deviceID, "statusword").checkForConstant("drive_referenced")) 
       std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
 
     // return true if drive signals it is referenced; false otherwise:
-    return sendSDO(deviceID, "statusword")->checkForConstant("drive_referenced");
+    return sendSDO(deviceID, "statusword").checkForConstant("drive_referenced");
   }
 
   void interactiveHoming(uint16_t deviceID, int speedFactor=1,
@@ -211,7 +201,7 @@ namespace canopen {
     sendSDO(deviceID, "modes_of_operation", mode);
     // todo: waitForConstant
     return 
-      sendSDO(deviceID, "modes_of_operation_display")->checkForConstant(mode);
+      sendSDO(deviceID, "modes_of_operation_display").checkForConstant(mode);
   }
   
   void sendPos(uint16_t deviceID, double pos_rad) {
@@ -223,8 +213,8 @@ namespace canopen {
   }
   
   double getPos(uint16_t deviceID) {
-    Message* m = sendSDO(deviceID, "position_actual_value");
-    return mdeg2rad( m->values_[0] );
+    Message m( sendSDO(deviceID, "position_actual_value") );
+    return mdeg2rad( m.values_[0] );
   }
   
 }
