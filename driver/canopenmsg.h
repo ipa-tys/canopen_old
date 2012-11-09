@@ -22,6 +22,7 @@
 #include <libpcan.h>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <regex>
 #include <pwd.h>
@@ -74,6 +75,7 @@ namespace canopen {
     // is a global variable within the "canopen" namespace
 
     Message waitForSDOreply();
+    Message waitForSDOreply_polling(); // todo: delete
     bool checkForConstant(std::string constName); // only for SDOs so far
     std::vector<std::string> parseFlags();
 

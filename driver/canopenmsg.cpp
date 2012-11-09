@@ -5,6 +5,9 @@
 #include "canopenmsg.h"
 
 namespace canopen {
+  std::mutex mut;
+  std::condition_variable data_cond;
+
   // -------------- namespace-global variables:
   bool using_master_thread = false;
   std::queue<Message> outgoingMsgQueue; // only used if using_master_thread==true
@@ -15,7 +18,7 @@ namespace canopen {
 
   // std::map<std::string, Message* > pendingSDOReplies; // todo: make thread-safe
   // todo: unordered map
-  std::map<std::string, Message > SDOreplies;
+  std::unordered_map<std::string, Message > SDOreplies;
 
   bool queue_incoming_PDOs = true; // todo: implement its use; only queue PDOs when true
   std::queue<Message> incomingPDOs; // todo: make thread_safe
@@ -231,7 +234,7 @@ namespace canopen {
 	// todo: mem cleanup necessary?? (don't think so)
 	values_[i] = *ittemp;
       }
-      incomingPDOs.push(*this);  // todo: ok?
+      // incomingPDOs.push(*this);  // todo: ok?
 
     } else if (m.Msg.ID >= 0x580 && m.Msg.ID <= 0x5ff) { // SDO replies
       uint16_t index = m.Msg.DATA[1] + (m.Msg.DATA[2]<<8);
@@ -355,7 +358,7 @@ namespace canopen {
 	      << ", value: " << values_[0] << std::endl;
   }
 
-  Message Message::waitForSDOreply() { 
+  Message Message::waitForSDOreply_polling() { 
     std::string ss = createMsgHash();
     auto tic = std::chrono::high_resolution_clock::now();
     bool timeout = false;
@@ -375,6 +378,22 @@ namespace canopen {
     SDOreplies.erase(ss);
     return m;
   } 
+
+  Message Message::waitForSDOreply() { 
+    std::string ss = createMsgHash();
+    auto tic = std::chrono::high_resolution_clock::now();
+    bool timeout = false;
+    // std::chrono::milliseconds timeout_msec(1000); // todo: find good timeout duration
+
+    std::unique_lock<std::mutex> lk(mut);
+    data_cond.wait(lk, [&](){ return SDOreplies.find(ss) != SDOreplies.end(); });
+    Message m = SDOreplies[ss];
+    SDOreplies.erase(ss);
+    lk.unlock();
+
+    return m;
+  } 
+
 
   bool Message::contains(std::string indexAlias) {
     std::vector<std::string> components = pdo.getComponents(alias_); 
@@ -430,11 +449,17 @@ namespace canopen {
 	// todo: return errno;
       }
       Message msg(m);
-      
-      // if incoming msg is an SDO, then put it in incomingSDO hash table,
+      // if incoming msg is an SDO, then put it in incomingSDO hash table,q
       // so that it can be fetched by sendSDO / waitForSDOreply:
-      if (msg.values_.size() == 1)
+      if (msg.values_.size() == 1) { // SDO, todo: refine; this could also apply to PDOs
+	std::lock_guard<std::mutex> lk(mut);
 	SDOreplies[ msg.createMsgHash() ] = msg;
+	data_cond.notify_one();
+      }
+      else // PDO
+	incomingPDOs.push(msg);
+
+      // std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
 

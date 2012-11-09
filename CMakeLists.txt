@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.6) 
 project (canopen) 
-list( APPEND CMAKE_CXX_FLAGS "-std=c++0x") # ${CMAKE_CXX_FLAGS}" ) # -g -ftest-coverage -fprofile-arcs")
+list( APPEND CMAKE_CXX_FLAGS "-std=c++0x" ) # ${CMAKE_CXX_FLAGS}" ) # -g -ftest-coverage -fprofile-arcs")
 # -fPIC
 # Recurse into the "Hello" and "Demo" subdirectories. This does not actually 
 # cause another cmake executable to run. The same process will walk through 
