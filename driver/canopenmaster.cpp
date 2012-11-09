@@ -34,8 +34,10 @@ namespace canopen {
 	  outgoingMsgQueue.front().writeCAN(true); 
 	  outgoingMsgQueue.pop();
 	}
-	std::this_thread::sleep_for(std::chrono::microseconds(1)); 
+	std::this_thread::sleep_for(std::chrono::microseconds(10)); 
       }
+      
+      // std::this_thread::sleep_until(tic + syncInterval);
       while (std::chrono::high_resolution_clock::now() < tic + syncInterval)
 	std::this_thread::sleep_for(std::chrono::microseconds(1)); 
     }
@@ -47,6 +49,9 @@ namespace canopen {
     master_thread.detach();
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
+
+
+
 
   void incomingPDOProcessorFunc() {
     // from chainMap build a map id2chain:
@@ -68,7 +73,7 @@ namespace canopen {
 	  chainMap[ id2chain[m.nodeID_] ]->update(m);
 	else
 	  std::cout << "Key " << m.nodeID_ << " not found!" << std::endl;
-	std::this_thread::sleep_for(std::chrono::milliseconds(1)); 
+	std::this_thread::sleep_for(std::chrono::milliseconds(10)); 
       }
     }
   }

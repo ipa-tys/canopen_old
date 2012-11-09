@@ -66,7 +66,7 @@ int main(int argc, char *argv[]) {
   std::chrono::milliseconds accelerationTime
     ( static_cast<int>(round( 1000.0 * targetVel / accel)) );
 
-  while (true) {
+  while (false) {
   double vel = 0;
   auto startTime = std::chrono::high_resolution_clock::now();
   auto tic = std::chrono::high_resolution_clock::now();

@@ -22,14 +22,19 @@
 #include <libpcan.h>
 #include <set>
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <regex>
 #include <pwd.h>
 #include <fstream>
 
+// #include "globals.h"
 #include "canopen_internal.h"
 
 namespace canopen {
+  extern std::mutex mut;
+  extern std::condition_variable data_cond;
+
 
   extern bool using_master_thread;
 
@@ -74,6 +79,7 @@ namespace canopen {
     // is a global variable within the "canopen" namespace
 
     Message waitForSDOreply();
+    Message waitForSDOreply_polling(); // todo: delete
     bool checkForConstant(std::string constName); // only for SDOs so far
     std::vector<std::string> parseFlags();
 
@@ -116,6 +122,7 @@ namespace canopen {
   void listenerFunc();
   void initListenerThread(); // initialize listener thread
 
+  extern std::unordered_map<std::string, Message > SDOreplies;
   extern std::queue<Message> outgoingMsgQueue; // todo: only for debugging
   extern std::queue<Message> incomingPDOs;
 
