@@ -8,6 +8,7 @@
 // https://github.com/ipa-tys/canopen/blob/master/doc/usermanual.pdf?raw=true
 
 #include <chrono>
+#include <listener.h>
 #include <canopenmaster.h>
 
 int main(int argc, char *argv[]) {
@@ -49,8 +50,8 @@ int main(int argc, char *argv[]) {
     return -1;
   } 
 
-  canopen::initListenerThread();
-  canopen::initIncomingPDOProcessorThread();
+  canopen::initListenerThread(canopen::smartListener);
+  // canopen::initIncomingPDOProcessorThread();
   std::this_thread::sleep_for(std::chrono::seconds(1));
   canopen::initMasterThread();
 

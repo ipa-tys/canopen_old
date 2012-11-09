@@ -5,6 +5,7 @@ ADD_LIBRARY( canopen STATIC
   canopen_highlevel.cpp
   chain_description.cpp
   chain.cpp
+  listener.cpp
   canopenmaster.cpp
   )
 
@@ -18,6 +19,7 @@ install (FILES
   canopen_highlevel.h
   chain_description.h
   chain.h
+  listener.h
   canopenmaster.h
   DESTINATION include)
 

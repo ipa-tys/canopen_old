@@ -5,6 +5,9 @@
 #include "canopenmsg.h"
 
 namespace canopen {
+
+  // extern std::mutex mut;
+  // extern std::condition_variable data_cond;
   std::mutex mut;
   std::condition_variable data_cond;
 
@@ -441,33 +444,6 @@ namespace canopen {
   }
 
 
-  void listenerFunc() {
-    while (true) {
-      TPCANRdMsg m;
-      if ((errno = LINUX_CAN_Read(canopen::h, &m))) {
-	perror("LINUX_CAN_Read() error");
-	// todo: return errno;
-      }
-      Message msg(m);
-      // if incoming msg is an SDO, then put it in incomingSDO hash table,q
-      // so that it can be fetched by sendSDO / waitForSDOreply:
-      if (msg.values_.size() == 1) { // SDO, todo: refine; this could also apply to PDOs
-	std::lock_guard<std::mutex> lk(mut);
-	SDOreplies[ msg.createMsgHash() ] = msg;
-	data_cond.notify_one();
-      }
-      else // PDO
-	incomingPDOs.push(msg);
-
-      // std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-  }
-
-  void initListenerThread() {
-    std::thread listener_thread(listenerFunc);
-    listener_thread.detach();
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
-  }
 
   
 }

@@ -6,7 +6,7 @@
 // See the user manual for details:
 // https://github.com/ipa-tys/canopen/blob/master/doc/usermanual.pdf?raw=true
 
-#include <canopen_highlevel.h>
+#include <listener.h>
 
 int main(int argc, char *argv[]) {
   if (argc != 3) {
@@ -26,10 +26,10 @@ int main(int argc, char *argv[]) {
   } 
     
   // initialize listener thread:
-  canopen::initListenerThread();    
+  canopen::initListenerThread(canopen::simpleListener);    
   canopen::initNMT();
   canopen::setMotorState(deviceID, "operation_enable");
   canopen::homing(deviceID);
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
-  canopen::closeConnection();
+  canopen::closeConnection(); 
 }

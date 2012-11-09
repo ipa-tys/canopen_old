@@ -50,6 +50,9 @@ namespace canopen {
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 
+
+
+
   void incomingPDOProcessorFunc() {
     // from chainMap build a map id2chain:
     std::map<uint16_t, std::string> id2chain;
