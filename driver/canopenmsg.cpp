@@ -258,8 +258,8 @@ namespace canopen {
     return ss;
   }
 
-  bool Message::checkForConstant(std::string constName) {
-    uint32_t value = values_[0];
+  bool Message::checkForConstant(std::string constName, int i) {
+    uint32_t value = values_[i];
     uint32_t constValue = eds.getConst(alias_, constName);
     uint32_t mask = eds.getMask(alias_, constName);
     return (value & mask) == constValue;
@@ -399,9 +399,14 @@ namespace canopen {
 
 
   bool Message::contains(std::string indexAlias) {
-    std::vector<std::string> components = pdo.getComponents(alias_); 
-    auto it = std::find(components.begin(), components.end(), indexAlias);
-    return it != components.end();
+
+    if (values_.size() > 1) { // PDO
+      std::vector<std::string> components = pdo.getComponents(alias_); 
+      auto it = std::find(components.begin(), components.end(), indexAlias);
+      return it != components.end();
+    } else { // SDO
+      
+    }
   }
 
   uint32_t Message::get(std::string indexAlias) {

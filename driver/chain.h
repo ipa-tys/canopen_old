@@ -28,6 +28,12 @@ namespace canopen {
       std::cout << it << " ";
     std::cout << std::endl;
   }
+  
+  enum class MotorState { not_ready_to_switch_on,
+      switch_on_disabled, ready_to_switch_on,
+      switched_on, operation_enable,
+      quick_stop_active, fault_reaction_active,
+      fault };
 
   class Device {  // [positions]=rad, [velocities]=rad/sec
   public:
@@ -62,6 +68,8 @@ namespace canopen {
     std::string CANbus_;
     uint16_t CANid_;
     bool initialized_;
+
+    MotorState motorState_;
   };
 
   struct ChainState {

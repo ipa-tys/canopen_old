@@ -15,14 +15,9 @@ namespace canopen {
   }
 
   void Device::update(Message m) {
-    assert
-      ( ( (m.timeStamp_msec == timeStamp_msec_ &&
-	   m.timeStamp_usec > timeStamp_usec_)
-	  ||
-	  (m.timeStamp_msec > timeStamp_msec_) )
-	&&
-	"Incoming message timeStamp overflow (std::chrono::microseconds); " 
-	"adapt timeStamp_ member variable in class canopen::Message!");
+    if (int i = m.contains("statusword") ) {
+      if (m.checkForConstant("
+    }
 
     if (m.contains("position_actual_value")) {
       double newPos = mdeg2rad( m.get("position_actual_value") );
@@ -52,8 +47,6 @@ namespace canopen {
       timeStamp_usec_ = m.timeStamp_usec;
     }
 
-    // Note: for any other canopen::Device member variables that should
-    // be updated continuously you can add the code here
   }
 
 }
